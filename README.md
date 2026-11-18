@@ -6,16 +6,16 @@
 
 ## 功能一览
 
-| 模块 | 已实现能力 |
-|---|---|
-| 身份与账号 | 注册、登录、登出、找回密码、修改密码、个人资料、管理员封禁/解封 |
-| 书籍目录 | 发布、编辑、上下架、重新出售、分类、关键词搜索、价格排序、详情、封面图片、管理员审核 |
-| 订单 | 创建订单、30 分钟锁书、超时自动取消、取消订单、状态机、幂等键、状态流水 |
-| 支付 | 模拟校内卡 / 第三方支付、支付流水、退款原路标记 |
-| 交接与物流 | 交接点选择、4 位交接码、买家确认收货、交接码仅卖家/管理员可见 |
-| 评价与信誉 | 交易完成后双向评价、平均信誉分、交易次数统计 |
-| 消息通知 | 订单、支付、交接、退款、评价、审核结果站内信，未读计数与已读操作 |
-| 后台运营 | 数据看板、书籍审核、退款审批、举报处理、用户封禁/解封 |
+| 模块       | 已实现能力                                                                           |
+| ---------- | ------------------------------------------------------------------------------------ |
+| 身份与账号 | 注册、登录、登出、找回密码、修改密码、个人资料、管理员封禁/解封                      |
+| 书籍目录   | 发布、编辑、上下架、重新出售、分类、关键词搜索、价格排序、详情、封面图片、管理员审核 |
+| 订单       | 创建订单、30 分钟锁书、超时自动取消、取消订单、状态机、幂等键、状态流水              |
+| 支付       | 模拟校内卡 / 第三方支付、支付流水、退款原路标记                                      |
+| 交接与物流 | 交接点选择、4 位交接码、买家确认收货、交接码仅卖家/管理员可见                        |
+| 评价与信誉 | 交易完成后双向评价、平均信誉分、交易次数统计                                         |
+| 消息通知   | 订单、支付、交接、退款、评价、审核结果站内信，未读计数与已读操作                     |
+| 后台运营   | 数据看板、书籍审核、退款审批、举报处理、用户封禁/解封                                |
 
 页面共 10 个核心场景：首页/书籍列表、书籍详情、下单确认、支付、我的订单、订单详情、发布书籍、消息中心、评价页、后台审核。主要列表和后台页面包含加载/空态/错误提示，详情页与操作结果都有明确反馈。
 
@@ -46,17 +46,31 @@ python run.py
 
 首次启动会自动创建 `data/bookrelay.db` 并写入演示数据。重置数据：停止服务后删除 `data/bookrelay.db`、`data/bookrelay.db-wal`、`data/bookrelay.db-shm`，再启动即可。
 
+### 在 GitHub Codespaces 中运行
+
+仓库已内置 `.devcontainer/`：新建或重建 Codespace 时自动创建 `.venv`、安装依赖，并以 `0.0.0.0:8000` 启动，转发后的 8000 端口设为公开。
+
+已有的 Codespace 里手动启动：
+
+```bash
+cd /workspaces/book-relay
+git pull origin master
+bash .devcontainer/start.sh
+```
+
+脚本是幂等的，重复执行不会起第二个进程；运行日志在 `/tmp/bookrelay.log`。启动后访问 `https://<codespace 名称>-8000.app.github.dev/`（端口页签里也会显示该链接）。
+
 ### 演示账号
 
-| 角色 | 邮箱 | 密码 |
-|---|---|---|
-| 管理员 | `admin@bookrelay.local` | `Admin@135` |
-| 学生（小林） | `lin@bookrelay.local` | `Student@123` |
-| 学生（阿陈） | `chen@bookrelay.local` | `Student@123` |
-| 学生（王同学） | `wang@bookrelay.local` | `Student@123` |
-| 学生（赵学姐） | `zhao@bookrelay.local` | `Student@123` |
-| 学生（小孙） | `sun@bookrelay.local` | `Student@123` |
-| 学生（周周） | `zhou@bookrelay.local` | `Student@123` |
+| 角色           | 邮箱                      | 密码                |
+| -------------- | ------------------------- | ------------------- |
+| 管理员         | `admin@bookrelay.local` | 本地默认 `Admin@135`，部署时由 `BOOKRELAY_ADMIN_PASSWORD` 指定 |
+| 学生（小林）   | `lin@bookrelay.local`   | `Student@123`     |
+| 学生（阿陈）   | `chen@bookrelay.local`  | `Student@123`     |
+| 学生（王同学） | `wang@bookrelay.local`  | `Student@123`     |
+| 学生（赵学姐） | `zhao@bookrelay.local`  | `Student@123`     |
+| 学生（小孙）   | `sun@bookrelay.local`   | `Student@123`     |
+| 学生（周周）   | `zhou@bookrelay.local`  | `Student@123`     |
 
 种子数据包含 5 个分类、12 本在售教材和 1 本待审核教材，可直接体验完整交易流程。生产环境设置 `BOOKRELAY_SEED_DEMO=0` 后不会创建演示学生和教材，只创建分类与管理员。
 
@@ -128,14 +142,14 @@ BookRelay/
 
 所有接口前缀为 `/api/v1`，完整定义见 `/docs` 或 `/openapi.json`。
 
-| 分组 | 代表接口 |
-|---|---|
-| 认证 | `POST /auth/register`、`POST /auth/login`、`POST /auth/reset-password`、`GET /auth/me` |
-| 书籍 | `GET /books`、`POST /books`、`GET /books/{id}`、`PATCH /books/{id}`、`POST /books/{id}/actions/{event}` |
-| 订单 | `POST /orders`、`GET /orders`、`GET /orders/{id}`、`POST /orders/{id}/pay`、`.../cancel`、`.../ship`、`.../refund`、`.../confirm` |
-| 评价 | `POST /orders/{id}/reviews`、`GET /orders/{id}/reviews`、`GET /users/{id}/reviews` |
-| 通知 | `GET /notifications`、`GET /notifications/unread-count`、`POST /notifications/{id}/read`、`POST /notifications/read-all` |
-| 举报 | `POST /reports` |
+| 分组 | 代表接口                                                                                                                                                                                                            |
+| ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 认证 | `POST /auth/register`、`POST /auth/login`、`POST /auth/reset-password`、`GET /auth/me`                                                                                                                      |
+| 书籍 | `GET /books`、`POST /books`、`GET /books/{id}`、`PATCH /books/{id}`、`POST /books/{id}/actions/{event}`                                                                                                   |
+| 订单 | `POST /orders`、`GET /orders`、`GET /orders/{id}`、`POST /orders/{id}/pay`、`.../cancel`、`.../ship`、`.../refund`、`.../confirm`                                                                   |
+| 评价 | `POST /orders/{id}/reviews`、`GET /orders/{id}/reviews`、`GET /users/{id}/reviews`                                                                                                                            |
+| 通知 | `GET /notifications`、`GET /notifications/unread-count`、`POST /notifications/{id}/read`、`POST /notifications/read-all`                                                                                    |
+| 举报 | `POST /reports`                                                                                                                                                                                                   |
 | 后台 | `GET /admin/dashboard`、`GET /admin/books`、`GET /admin/refunds`、`POST /admin/refunds/{id}`、`GET /admin/reports`、`POST /admin/reports/{id}`、`GET /admin/users`、`POST /admin/users/{id}/status` |
 
 统一错误结构：
@@ -182,23 +196,23 @@ pytest -q --cov=app --cov-report=term-missing
 
 ## 配置
 
-| 环境变量 | 默认值 | 说明 |
-|---|---|---|
-| `BOOKRELAY_ENV` | `development` | 设为 `production` 开启生产保护（强制密钥/管理员口令、关闭演示数据和 `/docs`、默认 Secure Cookie） |
-| `BOOKRELAY_SECRET` | 开发占位密钥 | 会话签名密钥；生产必须设置为至少 32 字节随机值，否则拒绝启动 |
-| `BOOKRELAY_DB` | `data/bookrelay.db` | SQLite 数据库路径 |
-| `BOOKRELAY_DATA` | `data/` | 数据目录 |
-| `BOOKRELAY_COOKIE_SECURE` | 生产默认 `1` | HTTPS 部署必须为 `1`，Cookie 加 `Secure` |
-| `BOOKRELAY_SESSION_HOURS` | `168` | 会话有效期（小时），公网可缩短到 12–24 |
-| `BOOKRELAY_ADMIN_EMAIL` | `admin@bookrelay.local` | 首次种子管理员邮箱 |
-| `BOOKRELAY_ADMIN_PASSWORD` | `Admin@135`（仅开发） | 生产必须设置强口令，否则拒绝启动 |
-| `BOOKRELAY_ADMIN_SECURITY_ANSWER` | 生产随机 | 管理员找回密码答案；生产不设则生成随机值 |
-| `BOOKRELAY_SEED_DEMO` | 生产默认 `0` | 是否写入演示学生/教材；生产应保持 `0` |
-| `BOOKRELAY_EMAIL_DOMAIN` | 空 | 如 `campus.edu`，限制注册邮箱域名 |
-| `BOOKRELAY_TRUSTED_ORIGINS` | 空 | 反向代理/多域名场景的可信 Origin，逗号分隔 |
-| `BOOKRELAY_MAX_REQUEST_BYTES` | `3145728` | 请求体上限（约 3MB），上传封面另限 2MB |
-| `BOOKRELAY_MAX_ACTIVE_UNPAID_ORDERS` | `3` | 单个买家最多同时持有的待支付订单数，防止恶意锁书 |
-| `BOOKRELAY_ENABLE_DOCS` | 生产默认 `0` | 是否开放 `/docs`、`/redoc`、`/openapi.json` |
+| 环境变量                               | 默认值                    | 说明                                                                                                  |
+| -------------------------------------- | ------------------------- | ----------------------------------------------------------------------------------------------------- |
+| `BOOKRELAY_ENV`                      | `development`           | 设为 `production` 开启生产保护（强制密钥/管理员口令、关闭演示数据和 `/docs`、默认 Secure Cookie） |
+| `BOOKRELAY_SECRET`                   | 开发占位密钥              | 会话签名密钥；生产必须设置为至少 32 字节随机值，否则拒绝启动                                          |
+| `BOOKRELAY_DB`                       | `data/bookrelay.db`     | SQLite 数据库路径                                                                                     |
+| `BOOKRELAY_DATA`                     | `data/`                 | 数据目录                                                                                              |
+| `BOOKRELAY_COOKIE_SECURE`            | 生产默认 `1`            | HTTPS 部署必须为 `1`，Cookie 加 `Secure`                                                          |
+| `BOOKRELAY_SESSION_HOURS`            | `168`                   | 会话有效期（小时），公网可缩短到 12–24                                                               |
+| `BOOKRELAY_ADMIN_EMAIL`              | `admin@bookrelay.local` | 首次种子管理员邮箱                                                                                    |
+| `BOOKRELAY_ADMIN_PASSWORD`           | `Admin@135`（仅开发）   | 生产必须设置强口令，否则拒绝启动                                                                      |
+| `BOOKRELAY_ADMIN_SECURITY_ANSWER`    | 生产随机                  | 管理员找回密码答案；生产不设则生成随机值                                                              |
+| `BOOKRELAY_SEED_DEMO`                | 生产默认 `0`            | 是否写入演示学生/教材；生产应保持 `0`                                                               |
+| `BOOKRELAY_EMAIL_DOMAIN`             | 空                        | 如 `campus.edu`，限制注册邮箱域名                                                                   |
+| `BOOKRELAY_TRUSTED_ORIGINS`          | 空                        | 反向代理/多域名场景的可信 Origin，逗号分隔                                                            |
+| `BOOKRELAY_MAX_REQUEST_BYTES`        | `3145728`               | 请求体上限（约 3MB），上传封面另限 2MB                                                                |
+| `BOOKRELAY_MAX_ACTIVE_UNPAID_ORDERS` | `3`                     | 单个买家最多同时持有的待支付订单数，防止恶意锁书                                                      |
+| `BOOKRELAY_ENABLE_DOCS`              | 生产默认 `0`            | 是否开放 `/docs`、`/redoc`、`/openapi.json`                                                     |
 
 ### 生产启动保护
 
@@ -234,14 +248,14 @@ pytest -q --cov=app --cov-report=term-missing
 
 ## 与教案的刻意差异
 
-| 教案选择 | 本项目 | 原因 |
-|---|---|---|
-| MySQL 8 | SQLite | 用户明确要求使用 SQLite |
-| Redis 缓存/库存锁 | SQLite `BEGIN IMMEDIATE` + 条件更新 | 单机部署，减少外部依赖 |
-| 云对象存储 | 本地 `app/static/uploads/` | 零预算、可直接运行 |
-| 真实支付网关 | 模拟支付 + 支付流水 | 课程项目不对接真实资金 |
-| Vue 3 + Vite | Jinja2 + 原生 JS | 零构建、离线可运行，便于验收 |
-| 邮件通知 | 仅站内信 | 不依赖 SMTP 配置 |
+| 教案选择          | 本项目                                | 原因                         |
+| ----------------- | ------------------------------------- | ---------------------------- |
+| MySQL 8           | SQLite                                | 用户明确要求使用 SQLite      |
+| Redis 缓存/库存锁 | SQLite `BEGIN IMMEDIATE` + 条件更新 | 单机部署，减少外部依赖       |
+| 云对象存储        | 本地 `app/static/uploads/`          | 零预算、可直接运行           |
+| 真实支付网关      | 模拟支付 + 支付流水                   | 课程项目不对接真实资金       |
+| Vue 3 + Vite      | Jinja2 + 原生 JS                      | 零构建、离线可运行，便于验收 |
+| 邮件通知          | 仅站内信                              | 不依赖 SMTP 配置             |
 
 ## 已知限制
 
