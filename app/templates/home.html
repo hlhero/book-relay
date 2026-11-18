@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="hero">
+  <h1>让闲置教材，接力给下一位同学</h1>
+  <p>发布你读完的教材，找到需要的那一本。校内面交、交接码确认、双方互评——教材流转就这样简单。</p>
+  <form class="searchbar" method="get" action="/">
+    <input name="keyword" value="{{ keyword }}" placeholder="搜索书名 / 作者 / ISBN，例如：数据结构" aria-label="搜索书籍">
+    <input type="hidden" name="category" value="{{ category }}">
+    <button class="btn" type="submit">搜索教材</button>
+  </form>
+</section>
+
+<div class="chips">
+  <a class="chip {{ 'active' if not category else '' }}" href="/?keyword={{ keyword }}&sort={{ sort }}">全部教材</a>
+  {% for c in categories %}
+  <a class="chip {{ 'active' if category == c.id else '' }}" href="/?keyword={{ keyword }}&category={{ c.id }}&sort={{ sort }}">{{ c.icon }} {{ c.name }}</a>
+  {% endfor %}
+</div>
+
+<div class="section-head">
+  <div><h2>{% if keyword %}“{{ keyword }}”的搜索结果{% else %}正在流转的教材{% endif %}</h2><p>共 {{ books|length }} 本 · 均为校内同学发布</p></div>
+  <form class="row" method="get" action="/">
+    <input type="hidden" name="keyword" value="{{ keyword }}"><input type="hidden" name="category" value="{{ category }}">
+    <select name="sort" onchange="this.form.submit()" aria-label="排序方式">
+      <option value="latest" {{ 'selected' if sort == 'latest' }}>最新发布</option>
+      <option value="price_asc" {{ 'selected' if sort == 'price_asc' }}>价格从低到高</option>
+      <option value="price_desc" {{ 'selected' if sort == 'price_desc' }}>价格从高到低</option>
+    </select>
+  </form>
+</div>
+
+<div class="loading" id="list-loading"><div class="spinner"></div>正在加载教材…</div>
+{% if books %}
+<div class="grid books">
+  {% for b in books %}
+  <a class="book-card" href="/books/{{ b.id }}">
+    <div class="cover">{% if b.cover_url %}<img src="{{ b.cover_url }}" alt="{{ b.title }}封面">{% else %}书{% endif %}</div>
+    <div class="book-body">
+      <div class="book-title">{{ b.title }}</div>
+      <div class="book-meta"><span>{{ b.author or '佚名' }} · {{ b.condition_text }}</span></div>
+      <div class="row"><span class="price"><small>¥</small>{{ b.price_text }}</span><span class="tag">{{ b.category_name }}</span></div>
+      <div class="book-meta"><span>卖家 {{ b.seller_nickname }}</span><span class="stars">★ {{ '%.1f'|format(b.seller_reputation) }}</span></div>
+    </div>
+  </a>
+  {% endfor %}
+</div>
+{% else %}
+<div class="card empty"><div class="icon">🔎</div><h3>暂时没有找到合适的教材</h3>
+  <p>换个关键词试试，或者把你手里的闲置教材挂上来。</p>
+  <a class="btn" href="/books/new">发布教材</a>
+</div>
+{% endif %}
+{% endblock %}
+{% block scripts %}
+<script>document.querySelector('.searchbar')?.addEventListener('submit', () => { const el = document.getElementById('list-loading'); if (el) el.classList.add('show'); });</script>
+{% endblock %}

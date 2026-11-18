@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.venv/
+venv/
+
+# Runtime data
+data/*.db
+data/*.db-wal
+data/*.db-shm
+data/*.log
+
+# Uploaded covers
+app/static/uploads/*
+!app/static/uploads/.gitkeep
+
+# Editor / OS
+.DS_Store
+Thumbs.db
+.zhanlu/
+.idea/
+.vscode/
+
+# Local secrets
+.env
+start.local.sh

@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card form-card">
+  <h1>注册书接力</h1>
+  <p class="muted">用校园邮箱注册，安全问题用于找回密码。</p>
+  <form id="register-form">
+    <div class="form-grid">
+      <label class="field"><span>昵称</span><input name="nickname" required minlength="2" maxlength="20" placeholder="例如：小林"></label>
+      <label class="field"><span>学号（选填）</span><input name="student_id" placeholder="20240101"></label>
+      <label class="field full"><span>邮箱</span><input name="email" type="email" required placeholder="you@campus.edu"></label>
+      <label class="field full"><span>密码（至少 8 位）</span><input name="password" type="password" minlength="8" required></label>
+      <label class="field"><span>找回密码问题</span><input name="security_question" value="入学年份？" required></label>
+      <label class="field"><span>问题答案</span><input name="security_answer" required placeholder="例如：2024"></label>
+    </div>
+    <button class="btn block" type="submit">注册并登录</button>
+  </form>
+  <p class="center small" style="margin-top:18px">已有账号？<a href="/login">去登录</a></p>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+$('#register-form').addEventListener('submit', async e => {
+  e.preventDefault(); const btn = $('button[type=submit]', e.target); busy(btn, true);
+  const f = new FormData(e.target);
+  try {
+    await api('/api/v1/auth/register', {method:'POST', body:Object.fromEntries(f)});
+    toast('注册成功，欢迎来到书接力', 'ok'); go('/');
+  } catch (err) { toast(err.message, 'err'); busy(btn, false); }
+});
+</script>
+{% endblock %}

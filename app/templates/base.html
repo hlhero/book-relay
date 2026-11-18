@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{{ title|default('书接力') }} · 书接力 BookRelay</title>
+<meta name="description" content="校园二手教材流转平台：发布闲置教材、检索下单、线下交接、双方互评。">
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<div id="progress"></div>
+<header class="site-header">
+  <div class="container header-inner">
+    <a class="brand" href="/">书接力 <small>BOOKRELAY</small></a>
+    <nav class="main-nav">
+      <a href="/">淘教材</a>
+      {% if user %}
+        <a href="/books/new">发布教材</a>
+        <a href="/orders">我的订单</a>
+        <a href="/notifications">消息{% if unread %}<span class="badge-dot">{{ unread }}</span>{% endif %}</a>
+        {% if user.role == 'admin' %}<a href="/admin">后台运营</a>{% endif %}
+        <a href="/profile"><span class="avatar">{{ user.nickname[0] }}</span>{{ user.nickname }}</a>
+        <button class="btn ghost sm" data-logout>退出</button>
+      {% else %}
+        <a href="/login">登录</a>
+        <a class="btn sm" href="/register">注册</a>
+      {% endif %}
+    </nav>
+  </div>
+</header>
+<main class="container page">
+  {% block content %}{% endblock %}
+</main>
+<footer class="site-foot">
+  <div class="container">书接力 BookRelay · 让教材在校园里转起来 · SQLite 模块化单体实现</div>
+</footer>
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+<div id="modal" class="modal" hidden><div class="modal-card" role="dialog" aria-modal="true"></div></div>
+<script src="/static/app.js"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

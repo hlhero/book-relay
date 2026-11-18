@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card form-card">
+  <h1>{{ '编辑教材' if book else '发布闲置教材' }}</h1>
+  <p class="muted">发布后由管理员审核，通过后显示在教材列表。价格、成色会作为下单快照保存。</p>
+  <form id="book-form">
+    <label class="field full"><span>书名 *</span><input name="title" required maxlength="100" value="{{ book.title if book else '' }}" placeholder="例如：数据结构（第2版）"></label>
+    <div class="form-grid">
+      <label class="field"><span>作者</span><input name="author" value="{{ book.author if book else '' }}"></label>
+      <label class="field"><span>版次</span><input name="edition" value="{{ book.edition if book else '' }}" placeholder="例如：第2版"></label>
+      <label class="field"><span>ISBN</span><input name="isbn" value="{{ book.isbn if book else '' }}"></label>
+      <label class="field"><span>分类 *</span><select name="category_id" required>
+        {% for c in categories %}<option value="{{ c.id }}" {{ 'selected' if book and book.category_id == c.id }}>{{ c.name }}</option>{% endfor %}
+      </select></label>
+      <label class="field"><span>价格（元）*</span><input name="price" type="number" step="0.01" min="0.01" required value="{{ book.price_text if book else '' }}"></label>
+      <label class="field"><span>成色 *</span><input name="condition_text" required value="{{ book.condition_text if book else '' }}" placeholder="例如：9成新，少量笔记"></label>
+      <label class="field full"><span>详细描述</span><textarea name="description" placeholder="书况、附带资料、可交接时间…">{{ book.description if book else '' }}</textarea></label>
+    </div>
+    <button class="btn" type="submit">{{ '保存修改' if book else '提交审核' }}</button>
+    <a class="btn secondary" href="{{ '/books/' ~ book.id if book else '/' }}">取消</a>
+  </form>
+  {% if book %}
+  <hr style="border:0;border-top:1px solid var(--line);margin:22px 0">
+  <h3>更新书影</h3>
+  <div class="row"><input type="file" id="cover-file" accept="image/png,image/jpeg,image/gif,image/webp" style="max-width:260px">
+    <button class="btn secondary sm" id="cover-upload">上传封面</button></div>
+  <p class="hint">支持 JPG / PNG / GIF / WEBP，最大 2MB。</p>
+  {% endif %}
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+$('#book-form').addEventListener('submit', async e => {
+  e.preventDefault(); const btn = $('button[type=submit]', e.target); busy(btn, true);
+  const f = new FormData(e.target);
+  const payload = {
+    title:f.get('title'), author:f.get('author')||'', isbn:f.get('isbn')||'', edition:f.get('edition')||'',
+    category_id:Number(f.get('category_id')), condition_text:f.get('condition_text'),
+    price_cents:Math.round(Number(f.get('price')) * 100), description:f.get('description')||''
+  };
+  try {
+    const result = {% if book %}await api('/api/v1/books/{{ book.id }}', {method:'PATCH', body:payload}){% else %}await api('/api/v1/books', {method:'POST', body:payload}){% endif %};
+    toast('已保存，书籍状态：' + result.status_label, 'ok'); go('/books/' + result.id);
+  } catch (err) { toast(err.message, 'err'); busy(btn, false); }
+});
+{% if book %}
+$('#cover-upload').addEventListener('click', async () => {
+  const file = $('#cover-file').files[0];
+  if (!file) { toast('请先选择图片', 'err'); return; }
+  const fd = new FormData(); fd.append('file', file);
+  try { await api('/api/v1/books/{{ book.id }}/cover', {method:'POST', body:fd}); toast('封面已更新', 'ok'); setTimeout(() => location.reload(), 400); }
+  catch (err) { toast(err.message, 'err'); }
+});
+{% endif %}
+</script>
+{% endblock %}

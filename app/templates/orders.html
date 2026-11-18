@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="section-head"><div><h1>我的订单</h1><p class="muted">订单详情里的按钮由当前状态决定，照着提示走就不会迷路。</p></div></div>
+<nav class="tabs">
+  <a href="/orders?scope=all" class="{{ 'active' if scope == 'all' }}">全部</a>
+  <a href="/orders?scope=buying" class="{{ 'active' if scope == 'buying' }}">我买到的</a>
+  <a href="/orders?scope=selling" class="{{ 'active' if scope == 'selling' }}">我卖出的</a>
+</nav>
+{% if orders %}
+<div class="grid two">
+  {% for o in orders %}
+  <a class="card" href="/orders/{{ o.id }}" style="color:inherit">
+    <div class="row"><span class="tag {{ 'warn' if o.status in ['CREATED','REFUNDING'] else ('bad' if o.status in ['CANCELLED','REFUNDED'] else '') }}">{{ o.status_label }}</span>
+      <span class="small faint">{{ o.order_no }}</span><div class="spacer"></div><span class="small muted">{{ o.created_at[:10] }}</span></div>
+    <div class="order-line">
+      <div class="thumb">{% if o.book_cover_url %}<img src="{{ o.book_cover_url }}" alt="">{% else %}书{% endif %}</div>
+      <div><strong>{{ o.book_title_snapshot }}</strong><div class="small muted">{{ '卖家' if scope == 'selling' or (user.id == o.seller_id and scope == 'all') else '买家' }}：{{ o.seller_nickname if user.id == o.buyer_id else o.buyer_nickname }}</div></div>
+      <div class="spacer"></div><span class="price"><small>¥</small>{{ o.amount_text }}</span>
+    </div>
+    <div class="small muted">交接点：{{ o.handover_point_label or HANDOVER_LABELS.get(o.handover_method, '待确认') }}</div>
+  </a>
+  {% endfor %}
+</div>
+{% else %}
+<div class="card empty"><div class="icon">📦</div><h3>这里还没有订单</h3>
+  <p>去找一本需要的教材，开启第一次 books 接力吧。</p><a class="btn" href="/">去看看教材</a></div>
+{% endif %}
+{% endblock %}

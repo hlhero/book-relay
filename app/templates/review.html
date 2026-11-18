@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card form-card">
+  <h1>为这次交易评价</h1>
+  <p class="muted">订单 {{ order.order_no }} · 你的评价会更新对方信誉分，双方互评后交易闭环。</p>
+  <form id="review-form">
+    <label class="field"><span>评分</span>
+      <select name="rating">
+        <option value="5">★★★★★ 非常满意</option><option value="4">★★★★ 满意</option>
+        <option value="3" selected>★★★ 一般</option><option value="2">★★ 不太满意</option><option value="1">★ 不满意</option>
+      </select></label>
+    <label class="field"><span>评价内容（必填）</span><textarea name="content" required placeholder="例如：教材成色与描述一致，交接很准时。"></textarea></label>
+    <button class="btn" type="submit">提交评价</button>
+    <a class="btn secondary" href="/orders/{{ order.id }}">稍后再说</a>
+  </form>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+$('#review-form').addEventListener('submit', async e => {
+  e.preventDefault(); const btn = $('button[type=submit]', e.target); busy(btn, true);
+  const f = new FormData(e.target);
+  try { await api('/api/v1/orders/{{ order.id }}/reviews', {method:'POST', body:{rating:Number(f.get('rating')), content:f.get('content')}});
+    toast('评价已提交，感谢你的反馈', 'ok'); go('/orders/{{ order.id }}'); }
+  catch (err) { toast(err.message, 'err'); busy(btn, false); }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="grid two">
+  <div class="card">
+    <div class="row"><span class="avatar" style="width:52px;height:52px;font-size:20px">{{ user.nickname[0] }}</span>
+      <div><h2>{{ user.nickname }}</h2><div class="small muted">{{ user.email }} · {{ user.student_id or '未填写学号' }}</div></div></div>
+    <div class="row" style="margin-top:16px"><span class="tag">信誉 ★ {{ '%.1f'|format(user.reputation) }}</span>
+      <span class="tag info">完成交易 {{ user.deal_count }} 次</span>
+      <span class="tag {{ 'bad' if user.status == 'banned' else '' }}">{{ '已封禁' if user.status == 'banned' else '正常' }}</span></div>
+    <h3 style="margin-top:22px">修改资料</h3>
+    <form id="profile-form">
+      <label class="field"><span>昵称</span><input name="nickname" value="{{ user.nickname }}" required></label>
+      <label class="field"><span>学号</span><input name="student_id" value="{{ user.student_id or '' }}"></label>
+      <button class="btn" type="submit">保存资料</button>
+    </form>
+    <h3 style="margin-top:22px">修改密码</h3>
+    <form id="password-form">
+      <label class="field"><span>原密码</span><input name="old_password" type="password" required></label>
+      <label class="field"><span>新密码（至少 8 位）</span><input name="new_password" type="password" minlength="8" required></label>
+      <button class="btn secondary" type="submit">更新密码</button>
+    </form>
+  </div>
+  <div class="card">
+    <h3>收到的评价</h3>
+    {% if reviews %}{% for r in reviews %}<div class="order-line"><div>
+      <span class="tag warn">{{ r.rating }} 星</span><div class="small muted">{{ r.content }}</div>
+      <div class="small faint">来自 {{ r.reviewer_nickname }} · 订单 {{ r.order_no }} · {{ r.created_at }}</div></div></div>{% endfor %}
+    {% else %}<div class="empty"><div class="icon">⭐</div><h3>还没有收到评价</h3><p>完成交易后，对方评价会显示在这里。</p></div>{% endif %}
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+$('#profile-form').addEventListener('submit', async e => {
+  e.preventDefault();
+  try { await api('/api/v1/auth/profile', {method:'PATCH', body:Object.fromEntries(new FormData(e.target))});
+    toast('资料已更新', 'ok'); setTimeout(() => location.reload(), 400); }
+  catch (err) { toast(err.message, 'err'); }
+});
+$('#password-form').addEventListener('submit', async e => {
+  e.preventDefault();
+  try { await api('/api/v1/auth/password', {method:'POST', body:Object.fromEntries(new FormData(e.target))});
+    toast('密码已更新，请使用新密码重新登录', 'ok');
+    setTimeout(() => go('/login'), 600); }
+  catch (err) { toast(err.message, 'err'); }
+});
+</script>
+{% endblock %}

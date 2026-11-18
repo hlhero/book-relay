@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="section-head"><div><h1>完成支付</h1><p class="muted">订单号 {{ order.order_no }} · 请在倒计时结束前完成</p></div>
+  <span class="tag warn" id="countdown">剩余 --:--</span></div>
+<div class="grid two">
+  <div class="card">
+    <h3>支付信息</h3>
+    <div class="order-line"><div class="thumb">{% if order.book_cover_url %}<img src="{{ order.book_cover_url }}" alt="">{% else %}书{% endif %}</div>
+      <div><strong>{{ order.book_title_snapshot }}</strong><div class="small muted">{{ order.condition_snapshot }}</div></div></div>
+    <dl class="kv"><dt>订单金额</dt><dd class="price"><small>¥</small>{{ order.amount_text }}</dd>
+      <dt>交接点</dt><dd>{{ HANDOVER_LABELS.get(order.handover_method, '待确认') }}</dd></dl>
+  </div>
+  <div class="card">
+    <h3>选择支付方式</h3>
+    <form id="pay-form">
+      <label class="field check"><input type="radio" name="channel" value="CAMPUS_CARD" checked><span>校内卡支付（模拟）</span></label>
+      <label class="field check"><input type="radio" name="channel" value="MOCK_THIRD_PARTY"><span>第三方支付（模拟）</span></label>
+      <div class="notice warn">本项目不对接真实支付网关；支付会生成流水并立即回调成功。</div>
+      <button class="btn block" type="submit">确认支付 ¥{{ order.amount_text }}</button>
+    </form>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+let left = {{ order.seconds_left }};
+function tick() {
+  const el = $('#countdown'); if (!el) return;
+  if (left <= 0) { el.textContent = '已超时'; el.className = 'tag bad'; return; }
+  el.textContent = `剩余 ${String(Math.floor(left/60)).padStart(2,'0')}:${String(left%60).padStart(2,'0')}`;
+  left--;
+}
+tick(); setInterval(tick, 1000);
+$('#pay-form').addEventListener('submit', async e => {
+  e.preventDefault(); const btn = $('button[type=submit]', e.target); busy(btn, true);
+  try { await api('/api/v1/orders/{{ order.id }}/pay', {method:'POST', body:{channel:new FormData(e.target).get('channel')}});
+    toast('支付成功，请等待卖家确认交接方式', 'ok'); go('/orders/{{ order.id }}'); }
+  catch (err) { toast(err.message, 'err'); busy(btn, false); }
+});
+</script>
+{% endblock %}

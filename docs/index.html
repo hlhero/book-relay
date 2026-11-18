@@ -1,0 +1,2835 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>技术设计方法论教案 · 从需求到设计文档的八步法</title>
+<meta name="description" content="面向大学生的软件技术设计课程教案：功能模块、业务流程与状态机、UI/UX 原型、架构与技术选型、数据库三层建模与 ER、API 与数据契约、一致性核对与设计评审，最终整合为技术设计文档，并讲透 AI 时代的设计协作方法。">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=LXGW+WenKai+TC&family=Noto+Serif+SC:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+:root{
+  --paper:#f4efe3;
+  --paper-2:#fffdf6;
+  --paper-3:#ece4d2;
+  --ink:#231f19;
+  --ink-soft:#5d5548;
+  --ink-faint:#8b8172;
+  --green:#2c5a4d;
+  --green-2:#3d7a68;
+  --green-soft:#e2ece7;
+  --red:#a53c26;
+  --red-soft:#f6e5df;
+  --gold:#a97c1f;
+  --gold-soft:#f7eed3;
+  --blue:#2b4f74;
+  --blue-soft:#e4ecf4;
+  --line:#d8cdb6;
+  --line-soft:#e6ddc9;
+  --shadow:0 1px 0 rgba(35,31,25,.04), 0 8px 24px -18px rgba(35,31,25,.45);
+  --f-head:'LXGW WenKai TC','KaiTi','STKaiti',serif;
+  --f-body:'Noto Serif SC','Songti SC','SimSun',serif;
+  --f-mono:'JetBrains Mono','Cascadia Code',Consolas,'Courier New',monospace;
+  --w:1180px;
+}
+
+*{box-sizing:border-box}
+html{scroll-behavior:smooth; scroll-padding-top:24px}
+body{
+  margin:0;
+  background:var(--paper);
+  color:var(--ink);
+  font-family:var(--f-body);
+  font-size:16.5px;
+  line-height:1.9;
+  -webkit-font-smoothing:antialiased;
+}
+body::before{
+  content:'';
+  position:fixed; inset:0; z-index:0; pointer-events:none;
+  opacity:.5;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/><feColorMatrix type='saturate' values='0'/></filter><rect width='180' height='180' filter='url(%23n)' opacity='.055'/></svg>");
+}
+body::after{
+  content:''; position:fixed; inset:0; z-index:0; pointer-events:none;
+  background:
+    radial-gradient(1200px 600px at 12% -8%, rgba(169,124,31,.10), transparent 60%),
+    radial-gradient(900px 500px at 100% 0%, rgba(44,90,77,.10), transparent 55%);
+}
+
+/* ---------- 顶部进度 ---------- */
+#progress{position:fixed;top:0;left:0;height:3px;width:0;background:linear-gradient(90deg,var(--green),var(--gold));z-index:60;transition:width .12s linear}
+
+/* ---------- 页头 ---------- */
+header.masthead{
+  position:relative; z-index:1;
+  background:linear-gradient(160deg,#22463d 0%,#2c5a4d 45%,#1d3b34 100%);
+  color:#f6f1e3;
+  padding:56px 28px 46px;
+  border-bottom:4px double rgba(214,183,113,.55);
+  overflow:hidden;
+}
+header.masthead::after{
+  content:''; position:absolute; right:-80px; top:-60px; width:420px; height:420px;
+  border-radius:50%;
+  background:radial-gradient(circle at 35% 35%, rgba(214,183,113,.20), transparent 62%);
+}
+.masthead-inner{max-width:var(--w); margin:0 auto; position:relative}
+.kicker{
+  font-family:var(--f-mono); font-size:12px; letter-spacing:.28em; text-transform:uppercase;
+  color:#d6b771; margin-bottom:18px;
+}
+.masthead h1{
+  font-family:var(--f-head); font-weight:400; font-size:clamp(30px,4.6vw,50px);
+  line-height:1.25; margin:0 0 14px; letter-spacing:.02em;
+}
+.masthead h1 em{font-style:normal; color:#e8c96a; border-bottom:2px solid rgba(232,201,106,.45); padding-bottom:2px}
+.masthead .lede{max-width:70ch; color:#d9d2bf; font-size:17px; margin:0 0 26px}
+.meta-row{display:flex; flex-wrap:wrap; gap:10px}
+.chip{
+  font-size:13px; font-family:var(--f-mono); letter-spacing:.04em;
+  border:1px solid rgba(246,241,227,.32); border-radius:2px;
+  padding:5px 12px; color:#e8e2d2; background:rgba(255,255,255,.05);
+}
+.chip b{color:#e8c96a; font-weight:500}
+
+/* ---------- 布局 ---------- */
+.shell{max-width:var(--w); margin:0 auto; padding:40px 28px 90px; position:relative; z-index:1; display:grid; grid-template-columns:246px minmax(0,1fr); gap:46px}
+nav.toc{position:sticky; top:22px; align-self:start; max-height:calc(100vh - 44px); overflow:auto; padding-right:6px}
+nav.toc::-webkit-scrollbar{width:6px}
+nav.toc::-webkit-scrollbar-thumb{background:var(--line); border-radius:3px}
+.toc-title{
+  font-family:var(--f-mono); font-size:11px; letter-spacing:.24em; text-transform:uppercase;
+  color:var(--ink-faint); padding-bottom:10px; border-bottom:1px solid var(--line); margin-bottom:12px;
+}
+nav.toc ol{list-style:none; margin:0; padding:0; counter-reset:toc}
+nav.toc li{counter-increment:toc}
+nav.toc a{
+  display:flex; gap:9px; align-items:baseline;
+  color:var(--ink-soft); text-decoration:none; font-size:14.5px; line-height:1.5;
+  padding:6px 10px 6px 8px; border-left:2px solid transparent; transition:.18s;
+}
+nav.toc a::before{
+  content:counter(toc,decimal-leading-zero);
+  font-family:var(--f-mono); font-size:11px; color:var(--ink-faint); min-width:20px;
+}
+nav.toc a:hover{color:var(--green); background:rgba(44,90,77,.06)}
+nav.toc a.active{color:var(--green); border-left-color:var(--green); background:rgba(44,90,77,.08); font-weight:500}
+.toc-ai{margin-top:18px; padding:12px 12px 12px 13px; border:1px dashed var(--gold); background:var(--gold-soft); border-radius:3px; font-size:13.5px; line-height:1.7; color:#6b5316}
+.toc-ai b{color:#8a6413}
+
+main{min-width:0}
+
+/* ---------- 章节 ---------- */
+section.chapter{margin:0 0 84px; scroll-margin-top:20px}
+.chapter-head{position:relative; margin:0 0 26px; padding-bottom:14px; border-bottom:1px solid var(--line)}
+.chapter-no{
+  font-family:var(--f-head); font-size:78px; line-height:1; color:var(--paper-3);
+  position:absolute; right:-6px; top:-16px; z-index:-1; user-select:none; letter-spacing:-.02em;
+}
+h2{
+  font-family:var(--f-head); font-weight:400; font-size:clamp(25px,3.2vw,33px);
+  margin:0 0 8px; letter-spacing:.01em; position:relative;
+}
+.chapter-head .sub{color:var(--ink-soft); font-size:15.5px; margin:0}
+h3{
+  font-family:var(--f-head); font-weight:400; font-size:21px; margin:42px 0 14px;
+  padding-left:14px; border-left:3px solid var(--green);
+}
+h4{font-family:var(--f-head); font-size:17.5px; margin:26px 0 10px; color:var(--green)}
+p{margin:0 0 14px}
+strong{font-weight:600; color:#1a1712}
+em.k{font-style:normal; background:linear-gradient(transparent 62%, var(--gold-soft) 62%); padding:0 2px}
+ul,ol{margin:0 0 16px; padding-left:1.5em}
+li{margin:5px 0}
+a{color:var(--green-2)}
+
+/* ---------- 组件 ---------- */
+.card{
+  background:var(--paper-2); border:1px solid var(--line); border-radius:4px;
+  padding:20px 22px; margin:22px 0; box-shadow:var(--shadow);
+}
+.card > :first-child{margin-top:0}
+.card > :last-child{margin-bottom:0}
+.card-title{
+  font-family:var(--f-head); font-size:17px; margin:0 0 10px;
+  display:flex; align-items:center; gap:9px; color:var(--green);
+}
+.card-title .tag{
+  font-family:var(--f-mono); font-size:10.5px; letter-spacing:.14em; text-transform:uppercase;
+  border:1px solid currentColor; border-radius:2px; padding:1px 6px; opacity:.72; font-weight:400;
+}
+
+.plain{background:rgba(255,253,246,.62); border:1px solid var(--line-soft)}
+.plain .card-title{color:var(--ink)}
+
+.note{border-left:4px solid var(--blue); background:var(--blue-soft); padding:14px 18px; margin:20px 0; border-radius:0 3px 3px 0}
+.note.tip{border-left-color:var(--green-2); background:var(--green-soft)}
+.note.warn{border-left-color:var(--gold); background:var(--gold-soft)}
+.note.danger{border-left-color:var(--red); background:var(--red-soft)}
+.note .h{font-family:var(--f-head); font-weight:600; margin-bottom:5px; display:block; font-size:15.5px}
+.note p:last-child{margin-bottom:0}
+.note p:first-of-type{margin-top:0}
+
+.ai{
+  border:1px solid #d9c27e; border-left:4px solid var(--gold);
+  background:linear-gradient(180deg,#fbf5e2,#f9f1dd); padding:16px 20px; margin:22px 0; border-radius:0 4px 4px 0;
+  position:relative;
+}
+.ai::before{
+  content:'AI 协作';
+  position:absolute; top:-11px; left:16px; font-family:var(--f-mono); font-size:10.5px; letter-spacing:.16em;
+  background:var(--gold); color:#fffdf6; padding:2px 9px; border-radius:2px; text-transform:uppercase;
+}
+.ai .h{font-family:var(--f-head); font-size:16.5px; margin:4px 0 8px; color:#6b5316}
+.ai p:last-child,.ai ul:last-child{margin-bottom:0}
+
+table{width:100%; border-collapse:collapse; margin:20px 0; font-size:14.8px; background:var(--paper-2); border:1px solid var(--line)}
+th,td{border:1px solid var(--line-soft); padding:9px 12px; text-align:left; vertical-align:top}
+th{background:var(--green); color:#f3efe1; font-weight:500; font-size:13.5px; letter-spacing:.03em; font-family:var(--f-head)}
+tbody tr:nth-child(even){background:rgba(236,228,210,.36)}
+td code,p code,li code{font-family:var(--f-mono); font-size:.87em; background:rgba(44,90,77,.09); padding:1px 5px; border-radius:2px; color:#1f4a3f}
+.tbl-scroll{overflow-x:auto; margin:20px 0}
+.tbl-scroll table{margin:0}
+
+pre{
+  background:#231f19; color:#eee7d6; padding:16px 18px; border-radius:4px; overflow-x:auto;
+  font-family:var(--f-mono); font-size:13.2px; line-height:1.72; margin:18px 0;
+  border:1px solid #3a342a; position:relative;
+}
+pre code{font-family:inherit; background:none; padding:0; color:inherit}
+pre .c{color:#8f9c8a}
+pre .k{color:#e8c96a}
+pre .s{color:#a9c7a8}
+pre .hl{background:rgba(232,201,106,.14); display:inline-block; width:100%}
+
+figure{margin:26px 0}
+figure svg{display:block; width:100%; height:auto; background:var(--paper-2); border:1px solid var(--line); border-radius:4px; box-shadow:var(--shadow)}
+figcaption{font-size:13.5px; color:var(--ink-soft); margin-top:9px; padding-left:12px; border-left:2px solid var(--gold); font-style:italic}
+
+.grid2{display:grid; grid-template-columns:repeat(auto-fit,minmax(268px,1fr)); gap:18px; margin:22px 0}
+.mini{background:var(--paper-2); border:1px solid var(--line); border-radius:4px; padding:16px 18px; box-shadow:var(--shadow)}
+.mini h5{font-family:var(--f-head); font-size:16px; margin:0 0 8px; color:var(--green)}
+.mini p:last-child,.mini ul:last-child{margin-bottom:0}
+.mini.bad{border-top:3px solid var(--red)}
+.mini.good{border-top:3px solid var(--green-2)}
+
+.steps{list-style:none; counter-reset:s; padding:0; margin:20px 0}
+.steps>li{counter-increment:s; position:relative; padding:0 0 18px 46px; border-left:1px solid var(--line); margin-left:12px}
+.steps>li:last-child{border-left-color:transparent; padding-bottom:0}
+.steps>li::before{
+  content:counter(s); position:absolute; left:-13px; top:2px; width:25px; height:25px; border-radius:50%;
+  background:var(--green); color:#f6f1e3; font-family:var(--f-mono); font-size:12.5px;
+  display:flex; align-items:center; justify-content:center; box-shadow:0 0 0 3px var(--paper);
+}
+.steps .st-t{font-family:var(--f-head); font-size:17px; margin-bottom:4px}
+.steps .st-d{color:var(--ink-soft); font-size:15px}
+
+.chips-row{display:flex; flex-wrap:wrap; gap:8px; margin:14px 0}
+.chips-row span{
+  font-family:var(--f-mono); font-size:12.5px; background:var(--paper-2);
+  border:1px solid var(--line); border-radius:2px; padding:3px 10px; color:var(--ink-soft);
+}
+
+.checklist{list-style:none; padding:0; margin:16px 0}
+.checklist li{position:relative; padding-left:30px; margin:7px 0; font-size:15px}
+.checklist li::before{
+  content:''; position:absolute; left:4px; top:9px; width:13px; height:13px;
+  border:1.5px solid var(--green-2); border-radius:2px;
+}
+
+details{
+  border:1px solid var(--line); border-left:3px solid var(--gold); border-radius:0 4px 4px 0;
+  background:var(--paper-2); margin:18px 0; overflow:hidden;
+}
+details>summary{
+  cursor:pointer; padding:12px 18px; font-family:var(--f-head); font-size:16px;
+  background:rgba(247,238,211,.6); list-style:none; user-select:none;
+}
+details>summary::-webkit-details-marker{display:none}
+details>summary::before{content:'▸ '; color:var(--gold); display:inline-block; transition:.2s}
+details[open]>summary::before{content:'▾ '}
+details .d-body{padding:6px 18px 16px}
+
+.kbd{font-family:var(--f-mono); font-size:.82em; border:1px solid var(--line); border-bottom-width:2px; border-radius:3px; padding:1px 6px; background:var(--paper-2)}
+
+.flow{display:flex; flex-wrap:wrap; align-items:center; gap:6px; margin:18px 0; font-size:14px}
+.flow .f-node{background:var(--paper-2); border:1px solid var(--line); border-radius:3px; padding:7px 12px; box-shadow:var(--shadow)}
+.flow .f-node.start{border-color:var(--green-2); color:var(--green)}
+.flow .f-node.end{border-color:var(--red); color:var(--red)}
+.flow .f-arrow{color:var(--ink-faint); font-family:var(--f-mono)}
+
+.wire{font-family:var(--f-mono); font-size:12.6px; line-height:1.5; background:var(--paper-2); border:1px solid var(--line); border-radius:3px; padding:12px 14px; white-space:pre; overflow-x:auto; color:#3b352b}
+
+footer.page-foot{
+  border-top:1px solid var(--line); margin-top:20px; padding-top:26px;
+  color:var(--ink-soft); font-size:14px; display:flex; flex-wrap:wrap; gap:16px; align-items:center; justify-content:space-between;
+}
+.deerflow{
+  font-family:var(--f-mono); font-size:11.5px; letter-spacing:.14em; text-transform:uppercase;
+  color:var(--ink-faint); text-decoration:none; border:1px solid var(--line); border-radius:2px;
+  padding:4px 11px; transition:.2s; display:inline-flex; align-items:center; gap:6px;
+}
+.deerflow:hover{color:var(--gold); border-color:var(--gold); background:rgba(169,124,31,.07)}
+
+#totop{
+  position:fixed; right:22px; bottom:22px; width:42px; height:42px; border-radius:50%;
+  background:var(--green); color:#f6f1e3; border:none; cursor:pointer; font-size:17px;
+  opacity:0; pointer-events:none; transition:.3s; z-index:50; box-shadow:0 6px 18px -8px rgba(35,31,25,.6);
+}
+#totop.show{opacity:1; pointer-events:auto}
+
+.reveal{opacity:0; transform:translateY(14px); transition:opacity .62s cubic-bezier(.2,.7,.3,1), transform .62s cubic-bezier(.2,.7,.3,1)}
+.reveal.in{opacity:1; transform:none}
+
+@media (max-width:940px){
+  .shell{grid-template-columns:1fr; gap:0; padding:28px 18px 70px}
+  nav.toc{position:static; max-height:none; margin-bottom:34px; border:1px solid var(--line); border-radius:4px; padding:16px 16px 8px; background:rgba(255,253,246,.6)}
+  .chapter-no{display:none}
+}
+@media print{
+  nav.toc,#totop,#progress,.toc-ai{display:none}
+  body::before,body::after{display:none}
+  body{background:#fff; font-size:11pt}
+  .shell{display:block; max-width:none; padding:0}
+  section.chapter{page-break-inside:avoid; margin-bottom:24pt}
+  .reveal{opacity:1; transform:none}
+  pre{background:#f4f4f4; color:#111; border-color:#ccc}
+}
+</style>
+</head>
+<body>
+<div id="progress"></div>
+
+<header class="masthead">
+  <div class="masthead-inner">
+    <div class="kicker">Technical Design · Course Notes</div>
+    <h1>技术设计方法论：<br>从一句需求到一份<em>能施工的设计文档</em></h1>
+    <p class="lede">
+      这份教案讲的是「写代码之前要做的那部分设计」。八个模块、一个贯穿案例、一套可直接落地的检查清单，
+      外加一章专门讨论<strong>AI 时代设计能力该往哪儿使劲</strong>——
+      代码正在贬值，而<strong>把模糊需求翻译成精确规格</strong>的能力正在升值。
+    </p>
+    <div class="meta-row">
+      <span class="chip">适用对象 · <b>计算机相关专业本科 2–4 年级</b></span>
+      <span class="chip">课时 · <b>8 学时讲授 + 4 学时实践</b></span>
+      <span class="chip">贯穿案例 · <b>校园二手书流转平台「书接力」</b></span>
+      <span class="chip">配套产出 · <b>1 份技术设计文档</b></span>
+    </div>
+  </div>
+</header>
+
+<div class="shell">
+<nav class="toc">
+  <div class="toc-title">目录</div>
+  <ol>
+    <li><a href="#ch0">课程导读：设计是什么</a></li>
+    <li><a href="#ch1">功能模块设计</a></li>
+    <li><a href="#ch2">业务流程与状态机</a></li>
+    <li><a href="#ch3">UI/UX 原型设计</a></li>
+    <li><a href="#ch4">架构设计与技术选型</a></li>
+    <li><a href="#ch5">数据库三层建模与 ER</a></li>
+    <li><a href="#ch6">API 设计与数据契约</a></li>
+    <li><a href="#ch7">一致性核对与设计评审</a></li>
+    <li><a href="#ch8">技术设计文档整合</a></li>
+    <li><a href="#ch9">贯穿实战全流程</a></li>
+    <li><a href="#ch10">AI 时代的设计方法论</a></li>
+    <li><a href="#ch11">常见错误速查表</a></li>
+    <li><a href="#ch12">课后练习与答案</a></li>
+    <li><a href="#ch13">术语表与工具箱</a></li>
+  </ol>
+  <div class="toc-ai">
+    <b>一句话主线：</b>AI 能写代码，但 AI 读不懂「你到底要什么」。
+    本课教的那件事——把模糊需求变成精确、无歧义、可验证的规格——正是喂给 AI 的最好饲料。
+  </div>
+</nav>
+
+<main>
+
+<!-- ============ 第 0 章 ============ -->
+<section class="chapter" id="ch0">
+  <div class="chapter-head">
+    <span class="chapter-no">00</span>
+    <h2>课程导读：技术设计到底是什么</h2>
+    <p class="sub">先搞清楚「我们在做什么」，再学「怎么做」。</p>
+  </div>
+
+  <div class="card">
+    <p class="card-title"><span class="tag">一句话</span>技术设计＝把「我们想要什么」翻译成「我们要造的东西长什么样」的一份可施工的蓝图。</p>
+    <p>你可以把它类比成盖房子：需求文档是「我要一间能住人的房子」；技术设计是「这间房有几个房间、门开在哪、水电怎么走、承重墙在哪儿、楼梯多宽」；而代码是「砖和水泥」。</p>
+    <p>蓝图画错了，砖砌得再好也白搭——所以设计阶段的每一次修改，成本远低于施工阶段的返工。</p>
+  </div>
+
+  <h3>0.1 三种「设计」，别搞混</h3>
+  <div class="tbl-scroll">
+  <table>
+    <thead><tr><th>层次</th><th>回答的问题</th><th>主要产物</th><th>谁来做</th><th>本课覆盖</th></tr></thead>
+    <tbody>
+      <tr><td><strong>产品设计</strong></td><td>做什么？给谁用？解决什么问题？</td><td>需求文档、原型（偏业务）、PRD</td><td>产品经理 / 用户</td><td>只做衔接</td></tr>
+      <tr><td><strong>技术设计</strong></td><td>怎么造？数据怎么存、接口怎么定、状态怎么流转？</td><td>模块划分、状态机、架构图、ER 图、OpenAPI、设计文档</td><td>架构师 / 技术负责人 / 开发</td><td><strong>本课主体</strong></td></tr>
+      <tr><td><strong>详细设计</strong></td><td>这段代码具体怎么写？</td><td>函数签名、类图、算法伪码、单元测试用例</td><td>开发本人</td><td>只做衔接</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="note warn">
+    <span class="h">一个常见误会</span>
+    <p>「我先写完，再补设计文档」——这是学生项目最常见的翻车姿势。设计不是写给甲方看的 PPT，而是<strong>写给自己看的</strong>：当你三个月后忘了当初为什么把订单拆成三个状态时，这份文档就是你的记忆外挂。</p>
+  </div>
+
+  <h3>0.2 为什么值得花时间做设计</h3>
+  <div class="grid2">
+    <div class="mini bad"><h5>❌ 不做设计的代价</h5><ul><li>需求一变，牵一发动全身</li><li>两个人写的模块互相踩代码</li><li>表结构和接口对不上，联调天天吵</li><li>最后没人知道「为什么当初这么设计」</li></ul></div>
+    <div class="mini good"><h5>✓ 做设计的收益</h5><ul><li>改动影响面一眼看清</li><li>并行开发有共同依据</li><li>测试用例从设计里直接长出来</li><li>换人接手成本骤降</li></ul></div>
+  </div>
+
+  <h3>0.3 本课全景：八个模块的「血缘图」</h3>
+  <p>这八个模块不是并列的八个坑，而是<strong>一条有方向的流水线</strong>。上游的产出是下游的输入，下游发现上游的问题时要回头改上游——这就是第 7 章要讲的「一致性核对」。</p>
+
+  <figure>
+    <svg viewBox="0 0 900 470" role="img" aria-labelledby="pipet t1">
+      <title id="t1">八个设计模块的血缘与回流关系</title>
+      <defs>
+        <marker id="ar1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M0 0 L10 5 L0 10 z" fill="#8b8172"/>
+        </marker>
+        <marker id="ar2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M0 0 L10 5 L0 10 z" fill="#a53c26"/>
+        </marker>
+      </defs>
+      <rect x="0" y="0" width="900" height="470" fill="#fffdf6"/>
+      <!-- row 1 -->
+      <g font-family="Noto Serif SC, serif">
+        <rect x="24" y="30" width="170" height="70" rx="4" fill="#e2ece7" stroke="#2c5a4d"/>
+        <text x="109" y="56" text-anchor="middle" font-size="16" fill="#22463d">① 功能模块设计</text>
+        <text x="109" y="78" text-anchor="middle" font-size="12" fill="#5d5548">系统拆成哪几块</text>
+
+        <rect x="240" y="30" width="170" height="70" rx="4" fill="#e2ece7" stroke="#2c5a4d"/>
+        <text x="325" y="56" text-anchor="middle" font-size="16" fill="#22463d">② 业务流程 + 状态机</text>
+        <text x="325" y="78" text-anchor="middle" font-size="12" fill="#5d5548">事情怎么流转</text>
+
+        <rect x="456" y="30" width="170" height="70" rx="4" fill="#e2ece7" stroke="#2c5a4d"/>
+        <text x="541" y="56" text-anchor="middle" font-size="16" fill="#22463d">③ UI/UX 原型</text>
+        <text x="541" y="78" text-anchor="middle" font-size="12" fill="#5d5548">人怎么用</text>
+
+        <rect x="672" y="30" width="204" height="70" rx="4" fill="#e2ece7" stroke="#2c5a4d"/>
+        <text x="774" y="56" text-anchor="middle" font-size="16" fill="#22463d">④ 系统架构 + 选型</text>
+        <text x="774" y="78" text-anchor="middle" font-size="12" fill="#5d5548">用什么搭、怎么摆</text>
+
+        <!-- row 2 -->
+        <rect x="24" y="190" width="200" height="70" rx="4" fill="#e4ecf4" stroke="#2b4f74"/>
+        <text x="124" y="216" text-anchor="middle" font-size="16" fill="#2b4f74">⑤ 数据库三层建模 + ER</text>
+        <text x="124" y="238" text-anchor="middle" font-size="12" fill="#5d5548">数据长什么样、怎么存</text>
+
+        <rect x="270" y="190" width="200" height="70" rx="4" fill="#e4ecf4" stroke="#2b4f74"/>
+        <text x="370" y="216" text-anchor="middle" font-size="16" fill="#2b4f74">⑥ API 设计 + 数据契约</text>
+        <text x="370" y="238" text-anchor="middle" font-size="12" fill="#5d5548">模块之间怎么说话</text>
+
+        <rect x="516" y="190" width="200" height="70" rx="4" fill="#f7eed3" stroke="#a97c1f"/>
+        <text x="616" y="216" text-anchor="middle" font-size="16" fill="#7a5a12">⑦ 一致性核对 + 设计评审</text>
+        <text x="616" y="238" text-anchor="middle" font-size="12" fill="#5d5548">找出对不上的地方</text>
+
+        <rect x="672" y="330" width="204" height="80" rx="4" fill="#f6e5df" stroke="#a53c26"/>
+        <text x="774" y="358" text-anchor="middle" font-size="16" fill="#a53c26">⑧ 技术设计文档</text>
+        <text x="774" y="380" text-anchor="middle" font-size="12" fill="#5d5548">全部整合成一份图纸</text>
+      </g>
+      <g stroke="#8b8172" stroke-width="1.6" fill="none" marker-end="url(#ar1)">
+        <path d="M196 65 L236 65"/>
+        <path d="M412 65 L452 65"/>
+        <path d="M628 65 L668 65"/>
+        <path d="M325 102 L325 150 L150 150 L150 186" />
+        <path d="M325 150 L370 186"/>
+        <path d="M541 102 L541 150 L470 150 L470 186"/>
+        <path d="M774 102 L774 186"/>
+        <path d="M124 262 L124 300 L616 300 L616 262"/>
+        <path d="M370 262 L370 282 L660 282 L660 300 L616 300"/>
+        <path d="M716 226 L774 226 L774 326"/>
+      </g>
+      <g stroke="#a53c26" stroke-width="1.6" fill="none" stroke-dasharray="5 4" marker-end="url(#ar2)">
+        <path d="M616 262 C616 120 700 110 700 104"/>
+        <path d="M770 330 C860 320 880 240 880 120 L880 60"/>
+        <path d="M774 330 C700 336 300 340 124 300 L124 264"/>
+      </g>
+      <text x="700" y="112" font-family="Noto Serif SC, serif" font-size="12" fill="#a53c26">不一致 → 回上游改</text>
+      <text x="548" y="352" font-family="Noto Serif SC, serif" font-size="12" fill="#a53c26">评审不通过 → 全线返工</text>
+    </svg>
+    <figcaption>图 0-1　设计不是八座孤岛，而是一条单向流水线加一圈回流。红色虚线是本课反复强调的「回流」：发现问题必须改上游，而不是在下游打补丁。</figcaption>
+  </figure>
+
+  <div class="card">
+    <p class="card-title"><span class="tag">记住这句</span></p>
+    <p><strong>需求 → 功能模块 → 业务流程/状态机 → UI 原型 → 架构 → 数据模型 → API 契约 → 一致性核对 → 设计文档</strong></p>
+    <p>这条链上任何一环动了，都要回头检查它上游和下游 impacted 的部分。第 7 章会给你一张可以打印的核对矩阵。</p>
+  </div>
+
+  <h3>0.4 这门课在 AI 时代更值钱的原因</h3>
+  <p>坦率地说：<strong>写出「能跑的代码」正在贬值</strong>。大模型几秒钟就能生成一个 CRUD、画一个页面、搭一个脚手架。真正稀缺的是什么？</p>
+
+  <div class="tbl-scroll">
+  <table>
+    <thead><tr><th>能力</th><th>AI 接手后的状况</th><th>你还要不要练</th></tr></thead>
+    <tbody>
+      <tr><td>写出样板代码</td><td>AI 秒级完成，质量已可用</td><td>不必再练<strong>手速</strong>，改练<strong>审阅</strong></td></tr>
+      <tr><td>画一个 UI 稿</td><td>AI 能出图，但常不符合你的业务约束</td><td>练<strong>约束表达</strong>与验收标准</td></tr>
+      <tr><td>把模糊需求问清楚</td><td>AI 只会帮你把模糊需求<strong>更流畅地模糊掉</strong></td><td><strong>必须练</strong>，这是你的护城河</td></tr>
+      <tr><td>做技术取舍并承担后果</td><td>AI 可以列选项，但拍板与担责是你</td><td><strong>必须练</strong></td></tr>
+      <tr><td>写出无歧义、可验证的规格</td><td>AI 输出的质量 ＝ 你输入的精度</td><td><strong>必须练</strong>，本课就是练这个</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="ai">
+    <p class="h">本课的一个隐含主张</p>
+    <p>第 10 章会专门展开。这里先给你结论：<strong>在 AI 时代，「设计」不是流程负担，而是最高杠杆的一步。</strong>
+    给 AI 一句「帮我写个订单模块」，你得到的是千篇一律的电商模板；给它一份包含状态机、错误码、边界条件、验收标准的规格，你得到的才是能上线的代码。
+    所以本课的八个模块，恰好就是<strong>把「书接力的订单要支持取消」这种模糊句子，逐步升级成「状态 PAID 下收到 event=APPLY_REFUND 且 refundable=true 时迁移到 REFUNDING，同时写审计日志并释放库存锁」这种可执行规格</strong>的八个台阶。</p>
+  </div>
+
+  <h3>0.5 贯穿案例：书接力（BookRelay）</h3>
+  <p>整本教案用同一个例子讲到底，这样每一章都能看到「上一章的成果如何变成这一章的输入」。</p>
+  <div class="card plain">
+    <p class="card-title"><span class="tag">项目背景</span></p>
+    <p><strong>书接力</strong>是一个校园二手教材流转平台：学生把闲置教材挂上去，别人下单后线下交接，双方互评。
+    目标是让二手教材在校园里转起来，减少浪费。</p>
+    <div class="chips-row">
+      <span>用户角色：学生（买家/卖家）、管理员</span>
+      <span>核心对象：书籍、订单、评价、消息</span>
+      <span>规模假设：单校 2 万人，峰值 200 并发，日订单 300 单</span>
+      <span>约束条件：学生开发者 3 人、3 个月工期、预算 0（用免费层云服务）</span>
+    </div>
+    <p>请记住上面这行「约束条件」——它是第 4 章技术选型的直接输入。很多同学做设计时忘了自己只有 3 个人 3 个月，一上来就要微服务，那是要交学费的。</p>
+  </div>
+
+  <div class="note tip">
+    <span class="h">学习建议</span>
+    <p>每学完一章，就打开你的课程项目（哪怕是个很小的东西），按该章的产出物清单做一遍。<strong>看懂了 ≠ 会做</strong>。本课每个模块末尾都有「动手任务」，第 9 章会把八步串成一次完整实战。</p>
+  </div>
+</section>
+
+<!-- ============ 第 1 章 ============ -->
+<section class="chapter" id="ch1">
+  <div class="chapter-head">
+    <span class="chapter-no">01</span>
+    <h2>功能模块设计：把系统切成「职责清晰」的块</h2>
+    <p class="sub">解决一个问题：这么大一个系统，谁负责哪一块？</p>
+  </div>
+
+  <div class="card">
+    <p class="card-title"><span class="tag">一句话</span>功能模块设计＝把系统按「业务职责」切成若干块，每块有明确的名字、明确的职责、明确的对外接口。</p>
+    <p>像给一栋楼分区：宿舍楼、食堂、图书馆、实验楼。分区不是为了好看，而是为了让「快递来了放哪儿」「水管爆了找谁修」这类问题有明确答案。</p>
+  </div>
+
+  <h3>1.1 为什么不能「不分模块」</h3>
+  <p>把所有功能塞进一个巨大模块，会出现三个必然结果：</p>
+  <ul>
+    <li><strong>谁都能改，改什么都可能崩</strong>——改一个按钮把下单功能搞挂了，因为它们共用同一段代码。</li>
+    <li><strong>没法分工</strong>——3 个同学 3 个模块，才能并行开发；都改同一个模块只能排队。</li>
+    <li><strong>没法复用</strong>——「发通知」写在了下单逻辑里，下次「评价通知」又要抄一遍。</li>
+  </ul>
+
+  <h3>1.2 两种切法，别混用</h3>
+  <div class="grid2">
+    <div class="mini">
+      <h5>业务模块（功能域视角）</h5>
+      <p>按「业务在做什么」切：用户、商品、订单、支付、评价、通知、后台管理。</p>
+      <p><strong>这是本章要讲的。</strong>它的产出叫「功能模块说明书」，和需求文档、技术架构直接对应。</p>
+    </div>
+    <div class="mini">
+      <h5>技术分层（架构视角）</h5>
+      <p>按「代码在哪个层」切：Controller / Service / Repository / UI。</p>
+      <p>这是<strong>第 4 章架构设计</strong>的内容。两者不是替代关系，而是两个维度：业务模块回答「系统能干什么」，技术分层回答「代码怎么摆」。</p>
+    </div>
+  </div>
+  <div class="note danger">
+    <span class="h">经典错误</span>
+    <p>把「用户管理」「商品管理」当业务模块，等于把数据库的表名直接抄了一遍——它只说明了数据，<strong>没有说明业务</strong>。业务模块应该体现「用户在这个系统里做什么事」，比如「买家」「卖家」其实比「用户管理」更有信息量，因为它们的行为和权限完全不同。</p>
+  </div>
+
+  <h3>1.3 五步拆解法</h3>
+  <ol class="steps">
+    <li><div class="st-t">第一步：撒网列候选</div><div class="st-d">把需求里所有「动词 + 名词」捞出来。如：登录、浏览书籍、发布书籍、下单、支付、取消、评价、通知、审核。不用管重复，先全列出来。</div></li>
+    <li><div class="st-t">第二步：按业务对象聚类</div><div class="st-d">把功能挂到它操作的「东西」上：都跟书籍有关的 → 书籍域；都跟订单有关的 → 订单域。聚类时会自然暴露出重复和不清晰的地方。</div></li>
+    <li><div class="st-t">第三步：写清每个模块的一句话职责</div><div class="st-d">检验标准：这句话里不出现「和」「以及」「等」这种含糊词。「负责用户相关功能」不合格，「负责用户注册、登录与身份凭证管理」合格。</div></li>
+    <li><div class="st-t">第四步：划边界（依赖与对外能力）</div><div class="st-d">写清楚：这个模块依赖谁？它对外提供什么能力？哪些事它明确<strong>不做</strong>？最后这条最重要——不写「不做什么」的模块，边界一定会被侵蚀。</div></li>
+    <li><div class="st-t">第五步：排优先级与定复杂度</div><div class="st-d">用 MoSCoW 或简单三档：必须有 / 该有 / 可以有。给每个模块标一个复杂度（简单/中等/复杂），这是排工期和分配人力的依据。</div></li>
+  </ol>
+
+  <h3>1.4 模块说明书模板</h3>
+  <p>每个模块用一张表写清楚，不要用散文。</p>
+  <div class="tbl-scroll">
+  <table>
+    <thead><tr><th style="width:150px">字段</th><th>怎么写</th><th style="width:220px">书接力示例（订单模块）</th></tr></thead>
+    <tbody>
+      <tr><td>模块名称</td><td>名词短语</td><td>订单</td></tr>
+      <tr><td>一句话职责</td><td>动词开头，不含并列连接词</td><td>负责订单从创建到完结的整个生命周期</td></tr>
+      <tr><td>核心功能点</td><td>编号列表，3–7 条</td><td>① 创建订单 ② 计算金额 ③ 发起支付 ④ 取消订单 ⑤ 申请退款 ⑥ 查询订单</td></tr>
+      <tr><td>输入</td><td>数据来源</td><td>买家 ID、书籍快照、收货方式、幂等键</td></tr>
+      <tr><td>输出</td><td>对其他模块/用户交付的东西</td><td>订单编号、状态、应付金额、订单项列表</td></tr>
+      <tr><td>依赖模块</td><td>调用谁的能力</td><td>书籍（校验在售状态）、用户（校验余额）、支付、库存锁定</td></tr>
+      <tr><td>对外提供能力</td><td>别人怎么用我</td><td><code>createOrder()</code>、<code>cancelOrder(id)</code>、<code>queryOrder(id)</code></td></tr>
+      <tr><td>关键业务规则</td><td>可判定的条件句</td><td>待支付订单 30 分钟自动取消；已支付未发货可在 48 小时内申请退款</td></tr>
+      <tr><td>不承担的事</td><td>明确排除</td><td>不做支付通道对接、不做物流轨迹</td></tr>
+      <tr><td>优先级 / 复杂度</td><td>高/中/低 · 简单/中/复杂</td><td>必须有 · 复杂</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3>1.5 书接力的完整模块清单</h3>
+  <div class="tbl-scroll">
+  <table>
+    <thead><tr><th>#</th><th>模块</th><th>一句话职责</th><th>核心功能点</th><th>依赖</th><th>优先级</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>身份与账号</td><td>负责用户注册、登录与身份凭证管理</td><td>注册、登录、登出、密码找回、封禁</td><td>—</td><td>必须有</td></tr>
+      <tr><td>2</td><td>书籍目录</td><td>负责书籍信息的登记、检索与展示</td><td>发布、编辑、上下架、分类、搜索、详情</td><td>身份、通知</td><td>必须有</td></tr>
+      <tr><td>3</td><td>订单</td><td>负责订单从创建到完结的整个生命周期</td><td>创建、支付联动、取消、退款申请、查询</td><td>书籍、身份、支付、库存锁</td><td>必须有</td></tr>
+      <tr><td>4</td><td>支付</td><td>对接校内卡/第三方支付并维护支付流水</td><td>下单、支付回调、对账、退款单</td><td>订单</td><td>必须有</td></tr>
+      <tr><td>5</td><td>交接与物流</td><td>管理线下面交方式与交接码</td><td>选择交接点、生成交接码、确认收货</td><td>订单、身份</td><td>必须有</td></tr>
+      <tr><td>6</td><td>评价与信誉</td><td>维护买卖双方的互评与信誉分</td><td>评价、评分汇总、举报、申诉</td><td>订单、身份</td><td>该有</td></tr>
+      <tr><td>7</td><td>消息通知</td><td>把系统内事件以站内信与邮件送达用户</td><td>事件订阅、模板渲染、已读未读</td><td>全部业务模块</td><td>该有</td></tr>
+      <tr><td>8</td><td>后台运营</td><td>为管理员提供内容审核与数据看板</td><td>书籍审核、举报处理、用户管理、统计</td><td>全部</td><td>该有</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p style="font-size:14.5px;color:var(--ink-soft)">注意第 7 个模块「消息通知」：它<strong>依赖所有业务模块</strong>。这类「横切模块」要特别小心——最容易变成所有人的公共垃圾场，也最容易引发循环依赖。第 4 章讲依赖方向时会专门处理它。</p>
+
+  <h3>1.6 模块依赖图</h3>
+  <figure>
+    <svg viewBox="0 0 900 330" role="img" aria-labelledby="dep t2">
+      <title id="t2">书接力模块依赖图</title>
+      <defs><marker id="ar3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#8b8172"/></marker></defs>
+      <rect width="900" height="330" fill="#fffdf6"/>
+      <g font-family="Noto Serif SC, serif" font-size="15" text-anchor="middle">
+        <rect x="40" y="130" width="150" height="56" rx="4" fill="#e2ece7" stroke="#2c5a4d"/><text x="115" y="162" fill="#22463d">身份与账号</text>
+        <rect x="250" y="30" width="150" height="56" rx="4" fill="#e2ece7" stroke="#2c5a4d"/><text x="325" y="62" fill="#22463d">书籍目录</text>
+        <rect x="250" y="120" width="150" height="56" rx="4" fill="#e2ece7" stroke="#2c5a4d"/><text x="325" y="152" fill="#22463d">订单</text>
+        <rect x="250" y="210" width="150" height="56" rx="4" fill="#e2ece7" stroke="#2c5a4d"/><text x="325" y="242" fill="#22463d">交接与物流</text>
+        <rect x="470" y="30" width="150" height="56" rx="4" fill="#e2ece7" stroke="#2c5a4d"/><text x="545" y="62" fill="#22463d">支付</text>
+        <rect x="470" y="120" width="150" height="56" rx="4" fill="#e2ece7" stroke="#2c5a4d"/><text x="545" y="152" fill="#22463d">评价与信誉</text>
+        <rect x="470" y="210" width="150" height="56" rx="4" fill="#e2ece7" stroke="#2c5a4d"/><text x="545" y="242" fill="#22463d">后台运营</text>
+        <rect x="690" y="120" width="150" height="56" rx="4" fill="#f7eed3" stroke="#a97c1f"/><text x="765" y="152" fill="#7a5a12">消息通知</text>
+      </g>
+      <g stroke="#8b8172" stroke-width="1.5" fill="none" marker-end="url(#ar3)">
+        <path d="M192 148 L246 148"/>
+        <path d="M192 162 L246 90"/>
+        <path d="M400 60 L466 56"/>
+        <path d="M400 148 L466 56"/>
+        <path d="M400 148 L466 148"/>
+        <path d="M400 238 L466 238"/>
+        <path d="M620 56 L686 138"/>
+        <path d="M620 148 L686 148"/>
+        <path d="M620 238 L686 156"/>
+        <path d="M765 176 L765 210 L545 210 L545 176"/>
+        <path d="M765 176 L765 120 L325 120 L325 62"/>
+        <path d="M765 176 L765 90 L115 90 L115 128"/>
+      </g>
+      <text x="700" y="238" font-family="Noto Serif SC, serif" font-size="12" fill="#8b8172">（反向箭头表示「事件通知」）</text>
+    </svg>
+    <figcaption>图 1-1　实线＝同步依赖（调用），虚线＝事件依赖（发消息）。注意「消息通知」与业务模块之间刻意保持「单向发布」，不反向依赖业务实现。</figcaption>
+  </figure>
+
+  <h3>1.7 常见错误</h3>
+  <div class="tbl-scroll">
+  <table>
+    <thead><tr><th>错误做法</th><th>为什么错</th><th>正确做法</th></tr></thead>
+    <tbody>
+      <tr><td>一个巨型模块「系统管理」</td><td>什么都往里塞，等于没分</td><td>按业务对象拆，职责写进说明书</td></tr>
+      <tr><td>模块按技术层命名</td><td>「前端模块」「后端模块」这不是业务划分</td><td>业务模块 + 架构分层是两个维度</td></tr>
+      <tr><td>只写「做什么」不写「不做什么」</td><td>边界会被侵蚀，最后所有人都在改订单模块</td><td>强制写「不承担的事」一行</td></tr>
+      <tr><td>模块之间互相调用形成环</td><td>无法独立测试，无法并行开发</td><td>单向依赖 + 事件解耦（见 1.6 图）</td></tr>
+      <tr><td>没有优先级</td><td>不知道先做哪个，最后什么都做一半</td><td>必须有/该有/可以有 三档 + 复杂度</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="ai">
+    <p class="h">用 AI 做模块拆解：把它当陪练，不当答案机</p>
+    <p><strong>推荐用法（对抗式）：</strong>把你列的模块清单和每条职责丢给 AI，让它扮演「挑剔的架构评审」挑刺：职责是否含糊、是否与其他模块重叠、有没有遗漏、依赖是否成环。它挑的问题你逐条判断，<strong>不要直接抄它的答案</strong>——它不知道你只有 3 个人、不知道你们已经用 Redis 做过缓存。</p>
+    <pre><code>你是代码评审专家。下面是我拆分的功能模块表。请扮演挑剔的架构评审，逐条指出：
+1) 职责描述含糊（含「等」「相关」「管理」等模糊词）
+2) 与其它模块职责重叠
+3) 可能遗漏的功能
+4) 依赖关系中可能形成环的地方
+5) 划分粒度不一致（有的太粗有的太细）
+我的约束：3 人团队 / 3 个月 / 校园场景 / 无预算。
+只输出问题清单和修改建议，不要重写我的表。
+【粘贴模块表】</code></pre>
+    <p><strong>不要用的用法：</strong>直接把需求丢给 AI 让它输出模块清单然后照抄。它会给你一套「电商模板模块」（用户中心、商品中心、购物车、订单中心、营销中心……），看着专业，但和你的真实场景八竿子打不着。</p>
+  </div>
+
+  <details>
+    <summary>动手任务 1-A：给你自己的项目做模块拆解（30 分钟）</summary>
+    <div class="d-body">
+      <ol>
+        <li>用「动词 + 名词」列出 15–25 个候选功能（不要急着合并）。</li>
+        <li>聚类成 5–9 个业务模块，给每个模块起一个名词短语的名字。</li>
+        <li>为每个模块写「一句话职责 + 3–7 条核心功能 + 不承担的事 + 优先级 + 复杂度」。</li>
+        <li>画出模块依赖图，标出是否存在环。</li>
+        <li>自检：把所有职责连起来读一遍，能不能用 3 句话讲清楚「这个系统是干什么的」？讲不清楚说明模块划得太碎或太粗。</li>
+      </ol>
+      <p style="margin-top:12px"><strong>产出物：</strong>《功能模块说明书》+ 一张依赖图。这是你后面六章的输入。</p>
+    </div>
+  </details>
+</section>
+
+<!-- ============ 第 2 章 ============ -->
+<section class="chapter" id="ch2">
+  <div class="chapter-head">
+    <span class="chapter-no">02</span>
+    <h2>业务流程建模与状态机设计</h2>
+    <p class="sub">解决两个问题：事情按什么顺序发生？东西在各个阶段是什么状态？</p>
+  </div>
+
+  <div class="card">
+    <p class="card-title"><span class="tag">一句话</span>业务流程＝谁在什么时候做了什么；状态机＝某个「东西」在生命周期里处于什么状态、能被什么事件推到下一个状态。</p>
+    <p>流程像一条路上的<strong>路线图</strong>，状态机像路上每个<strong>红绿灯的规则表</strong>。只有路线图没有规则表，路上堵车；只有规则表没有路线图，红绿灯装错了地方。</p>
+  </div>
+
+  <h3>2.1 业务流程：先说清「谁」</h3>
+  <p>画流程最容易犯的错是「一条线走到底」——因为真实的系统里，<strong>不同角色做的事是并行的</strong>。所以第一步是列角色：</p>
+  <div class="chips-row">
+    <span>买家</span><span>卖家</span><span>系统</span><span>支付平台</span><span>管理员</span>
+  </div>
+  <p>然后画<strong>泳道图</strong>：每条泳道一个角色，每个方框是一个动作，方框之间的箭头是流转，菱形是判断。</p>
+
+  <div class="card plain">
+    <p class="card-title"><span class="tag">主流程（文字版）</span></p>
+    <ol>
+      <li><strong>卖家</strong>：发布书籍 → 上架待售</li>
+      <li><strong>买家</strong>：搜索浏览 → 选定书籍 → 提交订单（创建订单，锁书 15 分钟）</li>
+      <li><strong>买家</strong>：支付（订单转「已支付」）</li>
+      <li><strong>卖家</strong>：收到通知 → 确认交接方式 → 生成交接码 → 双方交接</li>
+      <li><strong>买家</strong>：输入交接码确认收货（订单转「已完成」）</li>
+      <li><strong>双方</strong>：互评（更新信誉分）</li>
+    </ol>
+  </div>
+
+  <h4>别忘了异常分支</h4>
+  <p>只写主流程的设计叫「理想世界设计」，上线后第一个被投诉的就是它。异常分支至少要覆盖这五类：</p>
+  <div class="tbl-scroll">
+  <table>
+    <thead><tr><th>异常类型</th><th>书接力例子</th><th>需要设计的点</th></tr></thead>
+    <tbody>
+      <tr><td>用户反悔</td><td>下单后不付款、下单后想取消</td><td>超时时长、能否取消、库存何时释放</td></tr>
+      <tr><td>外部依赖失败</td><td>支付网关超时、回调丢失</td><td>重试策略、幂等、最终一致还是强一致</td></tr>
+      <tr><td>并发冲突</td><td>两人都想买最后一本</td><td>锁的粒度、超卖防护</td></tr>
+      <tr><td>数据不合法</td><td>交接码输错、被举报书籍</td><td>校验点在哪、错误码是什么、能否申诉</td></tr>
+      <tr><td>权限不足</td><td>学生想删别人的订单</td><td>鉴权在哪一层拦、返回什么</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3>2.2 从流程到状态机：把「对象」拎出来</h3>
+  <p>流程描述的是<strong>动作序列</strong>，状态机描述的是<strong>某个对象的属性变化</strong>。做法：从流程里找出那些<strong>会经历多个阶段</strong>的东西——订单、书籍、支付单、退款单——对每一个画状态机。</p>
+
+  <div class="note tip">
+    <span class="h">判定口诀</span>
+    <p>一个东西如果「现在处于某种状态，而且这个状态会影响下一步能做什么」，它就该有状态机。<strong>状态的价值在于约束</strong>——它把「什么时候可以做什么」写死，代码里只需要判一次，UI 上只需要决定按钮显不显示。</p>
+  </div>
+
+  <h3>2.3 状态机的四个要素</h3>
+  <div class="grid2">
+    <div class="mini"><h5>状态 State</h5><p>对象此刻的样子。用「已支付」「待发货」这种<strong>能一眼看出时间点</strong>的名词。不要用「支付中」（到底是进行中还是等待中？）。</p></div>
+    <div class="mini"><h5>事件 Event</h5><p>触发状态变化的动作。用「用户点击取消支付」「支付平台回调成功」这种<strong>具体的、可被观察到的</strong>描述。</p></div>
+    <div class="mini"><h5>守卫 Guard</h5><p>转移发生的前提条件。如「退款金额 ≤ 订单实付金额」「距下单 ≤ 48 小时」。没有守卫的状态机，往往上线后被业务规则打脸。</p></div>
+    <div class="mini"><h5>动作 Action</h5><p>转移时顺带做的事。如「释放库存锁」「写审计日志」「发通知给买家」。动作是状态机和业务流程的接口。</p></div>
+  </div>
+
+  <h3>2.4 订单状态机（书接力）</h3>
+  <figure>
+    <svg viewBox="0 0 900 500" role="img" aria-labelledby="fsm t3">
+      <title id="t3">订单状态机</title>
+      <defs>
+        <marker id="ar4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#5d5548"/></marker>
+        <marker id="ar5" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#a53c26"/></marker>
+      </defs>
+      <rect width="900" height="500" fill="#fffdf6"/>
+      <defs/>
+      <!-- nodes -->
+      <g font-family="Noto Serif SC, serif" text-anchor="middle">
+        <g><rect x="30" y="40" width="150" height="56" rx="28" fill="#f7eed3" stroke="#a97c1f"/><text x="105" y="63" font-size="15" fill="#7a5a12">待支付</text><text x="105" y="82" font-size="11" fill="#8b8172">CREATED</text></g>
+        <g><rect x="240" y="40" width="150" height="56" rx="28" fill="#e2ece7" stroke="#2c5a4d"/><text x="315" y="63" font-size="15" fill="#22463d">已支付</text><text x="315" y="82" font-size="11" fill="#8b8172">PAID</text></g>
+        <g><rect x="450" y="40" width="150" height="56" rx="28" fill="#e2ece7" stroke="#2c5a4d"/><text x="525" y="63" font-size="15" fill="#22463d">待交接</text><text x="525" y="82" font-size="11" fill="#8b8172">SHIPPED</text></g>
+        <g><rect x="660" y="40" width="170" height="56" rx="28" fill="#e2ece7" stroke="#2c5a4d"/><text x="745" y="63" font-size="15" fill="#22463d">已完成</text><text x="745" y="82" font-size="11" fill="#8b8172">COMPLETED</text></g>
+
+        <g><rect x="30" y="215" width="150" height="56" rx="28" fill="#f6e5df" stroke="#a53c26"/><text x="105" y="238" font-size="15" fill="#a53c26">已取消</text><text x="105" y="257" font-size="11" fill="#8b8172">CANCELLED</text></g>
+        <g><rect x="450" y="215" width="150" height="56" rx="28" fill="#f6e5df" stroke="#a53c26"/><text x="525" y="238" font-size="15" fill="#a53c26">退款中</text><text x="525" y="257" font-size="11" fill="#8b8172">REFUNDING</text></g>
+        <g><rect x="660" y="215" width="170" height="56" rx="28" fill="#f6e5df" stroke="#a53c26"/><text x="745" y="238" font-size="15" fill="#a53c26">已退款</text><text x="745" y="257" font-size="11" fill="#8b8172">REFUNDED</text></g>
+        <g><rect x="660" y="380" width="170" height="56" rx="28" fill="#ece4d2" stroke="#8b8172"/><text x="745" y="403" font-size="15" fill="#5d5548">已关闭</text><text x="745" y="422" font-size="11" fill="#8b8172">CLOSED</text></g>
+
+        <!-- initial -->
+        <circle cx="20" cy="68" r="5" fill="#5d5548"/>
+        <path d="M20 68 L28 68" stroke="#5d5548" stroke-width="1.5"/>
+      </g>
+      <!-- transitions -->
+      <g stroke="#5d5548" stroke-width="1.5" fill="none" marker-end="url(#ar4)">
+        <path d="M182 60 L236 60"/>
+        <path d="M392 60 L446 60"/>
+        <path d="M602 60 L656 60"/>
+        <path d="M105 98 L105 211"/>
+        <path d="M315 60 C315 150 480 150 525 211"/>
+        <path d="M525 98 L525 211"/>
+        <path d="M525 215 L525 100"/>
+        <path d="M602 240 L656 240"/>
+        <path d="M745 98 L745 211"/>
+        <path d="M745 273 L745 376"/>
+      </g>
+      <g font-family="JetBrains Mono, monospace" font-size="11.5" fill="#5d5548">
+        <text x="186" y="50">pay</text>
+        <text x="396" y="50">ship</text>
+        <text x="606" y="50">confirm</text>
+        <text x="112" y="160">cancel</text>
+        <text x="300" y="152">apply_refund</text>
+        <text x="500" y="160">apply_refund</text>
+        <text x="532" y="136">reject</text>
+        <text x="606" y="230">approve</text>
+        <text x="752" y="160">after 30d</text>
+      </g>
+      <g font-family="Noto Serif SC, serif" font-size="11.5" fill="#a53c26">
+        <text x="118" y="176">/ 用户取消或超时 30min</text>
+        <text x="300" y="168">/ 48h 内且未交接</text>
+        <text x="500" y="176">/ 交接后发现问题</text>
+      </g>
+      <g>
+        <rect x="248" y="380" width="230" height="56" rx="4" fill="#f4efe3" stroke="#d8cdb6"/>
+        <text x="363" y="403" text-anchor="middle" font-family="Noto Serif SC, serif" font-size="12.5" fill="#5d5548">终态：订单不再变化</text>
+        <text x="363" y="422" text-anchor="middle" font-family="Noto Serif SC, serif" font-size="11.5" fill="#8b8172">书籍恢复在售 · 评价入口关闭</text>
+      </g>
+      <g>
+        <rect x="30" y="380" width="230" height="56" rx="4" fill="#f6e5df" stroke="#a53c26"/>
+        <text x="145" y="403" text-anchor="middle" font-family="Noto Serif SC, serif" font-size="12.5" fill="#a53c26">状态爆炸的信号</text>
+        <text x="145" y="422" text-anchor="middle" font-family="Noto Serif SC, serif" font-size="11.5" fill="#8b8172">若出现「退款中 + 待交接」这类</text>
+      </g>
+    </svg>
+    <figcaption>图 2-1　订单状态机。注意「已支付」既是终态前态又是「退款被驳回」的回退目标——这正是为什么要把「拒绝退款」这条边显式画出来，否则开发时会漏。</figcaption>
+  </figure>
+
+  <h4>配套的状态转移表（可以直接变成代码里的 switch）</h4>
+  <div class="tbl-scroll">
+  <table>
+    <thead><tr><th>当前状态</th><th>事件</th><th>守卫条件</th><th>目标状态</th><th>附带动作</th></tr></thead>
+    <tbody>
+      <tr><td rowspan="2">待支付 CREATED</td><td>pay</td><td>支付回调金额 = 订单金额</td><td>已支付 PAID</td><td>写支付流水、通知卖家、锁库存转长期</td></tr>
+      <tr><td>cancel</td><td>用户主动取消 或 超时 30 分钟</td><td>已取消 CANCELLED</td><td>释放书籍库存锁</td></tr>
+      <tr><td rowspan="2">已支付 PAID</td><td>ship</td><td>卖家确认交接方式</td><td>待交接 SHIPPED</td><td>生成交接码、通知买家</td></tr>
+      <tr><td>apply_refund</td><td>距支付 ≤ 48h 且未交接</td><td>退款中 REFUNDING</td><td>创建退款单、通知管理员</td></tr>
+      <tr><td>待交接 SHIPPED</td><td>confirm</td><td>交接码校验通过</td><td>已完成 COMPLETED</td><td>结算卖家金额、开放评价</td></tr>
+      <tr><td>待交接 SHIPPED</td><td>apply_refund</td><td>交接后 48h 内且有纠纷凭证</td><td>退款中 REFUNDING</td><td>冻结结算、通知双方</td></tr>
+      <tr><td rowspan="2">退款中 REFUNDING</td><td>approve</td><td>管理员同意</td><td>已退款 REFUNDED</td><td>原路退款、书籍下架</td></tr>
+      <tr><td>reject</td><td>管理员驳回</td><td>已支付 PAID</td><td>恢复结算流程、通知申请方</td></tr>
+      <tr><td>已完成 COMPLETED</td><td>auto_close</td><td>完成满 30 天</td><td>已关闭 CLOSED</td><td>评价过期不可再评</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3>2.5 状态机的四个经典陷阱</h3>
+  <div class="grid2">
+    <div class="mini bad"><h5>① 状态爆炸</h5><p>状态两两组合导致数量爆炸（订单状态 × 交接状态 = 12 个状态）。解法：拆成多个<strong>正交</strong>的独立状态机，或用子状态机。</p></div>
+    <div class="mini bad"><h5>② 漏事件</h5><p>只写了「正常路径」，忘了「用户反悔」「超时」「外部失败」这些边。上线后必然要打补丁。</p></div>
+    <div class="mini bad"><h5>③ 非法转移没兜底</h5><p>代码里遇到一个状态机里不存在的转移，要么崩要么静默。正确做法：显式抛错 + 定义清楚「非法转移返回什么错误码」。</p></div>
+    <div class="mini bad"><h5>④ 状态与流程步骤混淆</h5><p>把「填写地址」「填写备注」当成订单状态——它们是流程步骤，不是订单的属性。判断方法：这个状态会持续存在吗？会显示在订单列表里吗？</p></div>
+  </div>
+
+  <h3>2.6 状态机 → 代码：一个能直接用的骨架</h3>
+  <pre><code><span class="c"># 状态转移表就是代码：新增状态时，加一行；改规则时，改守卫。</span>
+ORDER_TRANSITIONS = {
+    (<span class="k">"CREATED"</span>, <span class="k">"pay"</span>):            ("PAID",        "write_payment_record"),
+    (<span class="k">"CREATED"</span>, <span class="k">"cancel"</span>):         ("CANCELLED",   "release_stock_lock"),
+    (<span class="k">"PAID"</span>,    <span class="k">"ship"</span>):           ("SHIPPED",     "generate_handover_code"),
+    (<span class="k">"PAID"</span>,    <span class="k">"apply_refund"</span>):  ("REFUNDING",   "create_refund_order"),
+    (<span class="k">"SHIPPED"</span>,  <span class="k">"confirm"</span>):        ("COMPLETED",   "settle_seller_amount"),
+    (<span class="k">"SHIPPED"</span>,  <span class="k">"apply_refund"</span>):   ("REFUNDING",   "freeze_settlement"),
+    (<span class="k">"REFUNDING"</span>, <span class="k">"approve"</span>):      ("REFUNDED",    "refund_to_user"),
+    (<span class="k">"REFUNDING"</span>, <span class="k">"reject"</span>):       ("PAID",        "notify_applicant"),
+    (<span class="k">"COMPLETED"</span>, <span class="k">"auto_close"</span>):    ("CLOSED",      None),
+}
+
+def transit(order, event, **guard):
+    rule = ORDER_TRANSITIONS.get((order.status, event))
+    <span class="k">if</span> rule <span class="k">is</span> None:
+        <span class="k">raise</span> IllegalTransition(order.status, event)   <span class="c"># 兜底：显式失败</span>
+    target, action = rule
+    <span class="k">if not</span> check_guard(target, guard):
+        <span class="k">raise</span> GuardNotSatisfied(event)
+    order.status = target
+    <span class="k">if</span> action:
+        ACTIONS[action](order)
+    log_transition(order, event)          <span class="c"># 审计日志：谁在什么时候把订单推到了哪</span>
+    notify_related_modules(order, event)  <span class="c"># 发领域事件，通知模块只订阅、不反向调用</span>
+    <span class="k">return</span> order</code></pre>
+
+  <div class="ai">
+    <p class="h">AI 在状态机这件事上的正确用法</p>
+    <p><strong>AI 特别擅长「穷举」</strong>：让它帮你把状态机可能的漏洞找出来，比你自己想靠谱得多。</p>
+    <pre><code>下面是一个订单状态机的状态转移表。请你扮演一位有 5 年电商经验的风控工程师，找出：
+1) 缺失的事件/转移（尤其是超时、并发、外部系统失败、纠纷）
+2) 可能形成死锁或状态回退的转移
+3) 守卫条件缺失或互相矛盾的转移
+4) 缺少终态、导致资源（库存、金额、优惠券）可能泄漏的路径
+5) 从状态机反推：用户界面上每个状态应该显示哪些操作按钮
+每条问题给出：问题 → 建议增加的转移 → 理由。不要重写我的表。
+【粘贴状态转移表】</code></pre>
+    <p><strong>反过来，最不该让 AI 干的事：</strong>直接说「帮我设计一个订单状态机」。它会给你一个通用的五状态版本（待付款/已付款/已发货/已完成/已取消），看起来很标准，但缺少你们业务特有的退款、纠纷、超时释放库存这些真正会出事的部分。</p>
+  </div>
+
+  <details>
+    <summary>动手任务 2-A：给「书籍」也画一个状态机（20 分钟）</summary>
+    <div class="d-body">
+      <p>书籍是这本书里第二个有生命周期的对象。它的状态至少包括：草稿、在售、锁定（被下单占用）、已售、已下架、审核中、被封禁。</p>
+      <ol>
+        <li>列出全部状态，注意区分「用户能看到的」和「后台的」状态。</li>
+        <li>为每个状态写出「谁在什么条件下能让它离开这个状态」。</li>
+        <li>特别处理：<strong>锁定超时</strong>、<strong>卖家在锁定期间下架</strong>、<strong>买家取消后重新上架</strong> 三条边。</li>
+        <li>回答一个关键问题：如果一本书在「已售」之后被管理员封禁，订单状态要跟着变吗？为什么？</li>
+      </ol>
+      <p style="margin-top:12px"><strong>交付物：</strong>书籍状态机图 + 状态转移表（至少 10 行）。</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>动手任务 2-B：写一份异常分支清单（15 分钟）</summary>
+    <div class="d-body">
+      <p>针对订单流程，列出至少 12 条异常分支，每条写：<strong>触发条件 / 系统表现 / 系统动作 / 用户看到的提示</strong>。特别覆盖：重复点击支付、网络超时、支付回调延迟、两人抢同一本书、交接码输错、管理员长时间不处理退款。</p>
+    </div>
+  </details>
+</section>
+
+<!-- ============ 第 3 章 ============ -->
+<section class="chapter" id="ch3">
+  <div class="chapter-head">
+    <span class="chapter-no">03</span>
+    <h2>UI/UX 原型设计：让人知道下一步该干什么</h2>
+    <p class="sub">解决三个问题：有哪些页面？页面之间怎么跳？每个页面上用户要干什么？</p>
+  </div>
+
+  <div class="card">
+    <p class="card-title"><span class="tag">一句话</span>UI 原型＝把「模块」翻译成「人眼可见的界面与操作路径」，让用户在没写代码之前就能体验到你的设计。</p>
+    <p>UI 解决「长什么样」，UX 解决「好不好用」。对校园项目来说，UX 的权重往往高于 UI：一个丑但步骤清晰的页面，比一个漂亮但让人迷路的面团有用得多。</p>
+  </div>
+
+  <h3>3.1 先分清 UI 与 UX</h3>
+  <div class="grid2">
+    <div class="mini"><h5>UI（User Interface）</h5><p>看得见的部分：布局、配色、字号、控件样式、间距。它回答「界面由什么组成」。</p></div>
+    <div class="mini"><h5>UX（User Experience）</h5><p>用起来的感觉：步骤多少、提示是否清楚、出错时能否自救。它回答「用户能否顺利达成目标」。</p></div>
+  </div>
+  <div class="note tip">
+    <span class="h">自测法</span>
+    <p>把你的原型给一个没参与设计的人看，只说一句话：「这是一个校园二手书网站，帮我买一本《数据结构》。」<strong>如果他需要你指导，就说明 UX 有问题</strong>，这跟界面好不好看无关。</p>
+  </div>
+
+  <h3>3.2 三步法：信息架构 → 页面 → 交互</h3>
+  <ol class="steps">
+    <li><div class="st-t">第一步：列页面清单（信息架构）</div><div class="st-d">把第 1 章的每个功能模块映射到它需要的页面。一个模块通常对应 1–3 个页面（列表 / 详情 / 编辑）。同时画出导航结构（谁是一级、谁是二级、怎么返回）。</div></li>
+    <li><div class="st-t">第二步：定关键页面的结构</div><div class="st-d">先做 5–8 个最关键的页面线框，别的先别管。关键 = 使用频次最高 或 流程中最容易出错。</div></li>
+    <li><div class="st-t">第三步：串交互流程</div><div class="st-d">把页面用箭头连起来，标出每一步「用户点了什么」「系统返回什么」「失败了怎么回来」。这一步最容易被跳过，也最容易出事。</div></li>
+  </ol>
+
+  <h3>3.3 书接力的页面清单</h3>
+  <div class="tbl-scroll">
+  <table>
+    <thead><tr><th>页面</th><th>类型</th><th>对应模块</th><th>页面上要完成的唯一任务</th><th>关键接口</th></tr></thead>
+    <tbody>
+      <tr><td>首页 / 书籍列表</td><td>列表</td><td>书籍目录</td><td>找到想买的书</td><td>GET /books</td></tr>
+      <tr><td>书籍详情</td><td>详情</td><td>书籍目录</td><td>判断这本书是否值得买</td><td>GET /books/{id}</td></tr>
+      <tr><td>下单确认</td><td>表单</td><td>订单</td><td>确认信息并提交</td><td>POST /orders</td></tr>
+      <tr><td>支付页</td><td>表单</td><td>支付</td><td>完成付款</td><td>POST /payments</td></tr>
+      <tr><td>我的订单</td><td>列表</td><td>订单</td><td>查看订单当前处于什么状态</td><td>GET /orders</td></tr>
+      <tr><td>订单详情</td><td>详情</td><td>订单</td><td>看下一步该做什么（这个按钮就是状态机的出口）</td><td>GET /orders/{id}</td></tr>
+      <tr><td>发布书籍</td><td>表单</td><td>书籍目录</td><td>把书挂上去</td><td>POST /books</td></tr>
+      <tr><td>消息中心</td><td>列表</td><td>消息通知</td><td>处理需要你响应的通知</td><td>GET /notifications</td></tr>
+      <tr><td>评价页</td><td>表单</td><td>评价与信誉</td><td>给这次交易打个分</td><td>POST /reviews</td></tr>
+      <tr><td>后台审核</td><td>列表+操作</td><td>后台运营</td><td>处理举报与违规书籍</td><td>GET /admin/reports</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p style="font-size:14.5px;color:var(--ink-soft)">请注意最后两列：<strong>「页面上要完成的唯一任务」和「关键接口」</strong>。它们把 UI 设计直接挂回了第 1 章的模块和第 6 章的 API，这就是跨产物一致性核对的原料。</p>
+
+  <h3>3.4 原型的三种保真度</h3>
+  <div class="grid2">
+    <div class="mini"><h5>低保真：纸面 / 灰盒</h5><p>用纸笔画方框，或用纯 HTML 摆几个灰底方块。成本 30 分钟。<strong>用途：验证流程与信息是否够用</strong>——把方块拿给同学看，问「你知道自己现在在哪、下一步要点哪里吗」。</p></div>
+    <div class="mini"><h5>中保真：线框图</h5><p>用 Figma 组件库摆好布局、填上真实文字（中文占位符效果远好于 Lorem ipsum）。<strong>用途：验证信息层级与文案</strong>。</p></div>
+    <div class="mini"><h5>高保真：可点击原型</h5><p>加上颜色、字体、动效，做成能点的链接。<strong>用途：验证动线与状态切换</strong>（尤其是订单状态变化后按钮怎么变）。</p></div>
+    <div class="mini"><h5>别一上来就做高保真</h5><p>在流程还没想清楚时画漂亮界面，是在给错误方案化妆。先低保真跑通，再逐步升保真度。</p></div>
+  </div>
+
+  <h3>3.5 关键页面的线框（书接力）</h3>
+  <div class="grid2">
+    <div class="card plain" style="margin:0">
+      <p class="card-title"><span class="tag">列表页</span>书籍列表</p>
+      <div class="wire">┌────────────────────────────────┐
+│ 🔍 [搜索书名/作者/ISBN]  [分类▾]│
+├────────────────────────────────┤
+│ ┌──────┐  数据结构（第2版）    │
+│ │ 书影 │  ¥18  成色：9成新      │
+│ │      │  📍 主校区图书馆西门   │
+│ └──────┘  卖家：小林 ⭐4.8 (12) │
+│          [ 查看详情 ]            │
+├────────────────────────────────┤
+│ ┌──────┐  操作系统概念精要      │
+│ │ 书影 │  ¥25  成色：8成新      │
+│ └──────┘  [ 查看详情 ]            │
+└────────────────────────────────┘</div>
+    </div>
+    <div class="card plain" style="margin:0">
+      <p class="card-title"><span class="tag">详情页</span>书籍详情</p>
+      <div class="wire">┌────────────────────────────────┐
+│ ← 返回   数据结构（第2版）        │
+│ ┌──────┐  ¥18                   │
+│ │ 书影 │  成色：9成新 · 有笔记    │
+│ └──────┘  教材版次：第2版        │
+│                                │
+│ 卖家：小林  ⭐4.8  信用极好      │
+│ 交易 12 次  好评 12             │
+│                                │
+│ 交接方式：图书馆西门 / 宿舍楼下  │
+│                                │
+│ ┌──────────────────────────┐   │
+│ │   立即下单（库存 1 本）   │   │
+│ └──────────────────────────┘   │
+└────────────────────────────────┘</div>
+    </div>
+    <div class="card plain" style="margin:0">
+      <p class="card-title"><span class="tag">状态页</span>订单详情（已支付）</p>
+      <div class="wire">┌────────────────────────────────┐
+│ 订单号 #BR20240513001           │
+│ 状态： ● 已支付               │
+│                                │
+│  ┌ 状态条 ────────────────┐    │
+│  待支付━━●已支付━━待交接┿完成│
+│  └────────────────────────┘    │
+│                                │
+│ 数据结构（第2版）  ¥18          │
+│ 交接方式：图书馆西门            │
+│                                │
+│ ┌──────────────────────────┐   │
+│ │      申请退款            │   │
+│ └──────────────────────────┘   │
+│ ⓘ 交接前 48 小时内可申请退款   │
+└────────────────────────────────┘</div>
+    </div>
+    <div class="card plain" style="margin:0">
+      <p class="card-title"><span class="tag">状态页</span>订单详情（待交接）</p>
+      <div class="wire">┌────────────────────────────────┐
+│ 订单号 #BR20240513001           │
+│ 状态： ● 待交接               │
+│                                │
+│ ┌ 状态条 ────────────────┐    │
+│ 待支付━━已支付━━●待交接┿完成│
+│  └────────────────────────┘    │
+│                                │
+│ 交接码：  ┌────────┐           │
+│          │  7 3 2 1 │  ← 卖家   │
+│          └────────┘     提供   │
+│                                │
+│ ┌──────────────────────────┐   │
+│ │    我已收到书，确认收货    │   │
+│ └──────────────────────────┘   │
+│ ⓘ 请当面核对交接码后再确认     │
+└────────────────────────────────┘</div>
+    </div>
+  </div>
+  <div class="note tip">
+    <span class="h">状态页是 UI 与状态机的接合点</span>
+    <p>对比上面两张订单详情图：<strong>同一个页面，因为订单状态不同，按钮完全不同</strong>。这就是状态机对 UI 的直接约束——按钮不是随便加的，它对应状态转移表里当前状态的「出口事件」。设计评审时要专门核对这一条（见 7.4）。</p>
+  </div>
+
+  <h3>3.6 UX 的六条基本规则（学生项目最常丢分的地方）</h3>
+  <div class="tbl-scroll">
+  <table>
+    <thead><tr><th>规则</th><th>反例</th><th>正例</th></tr></thead>
+    <tbody>
+      <tr><td>一个页面一个主任务</td><td>首页塞了搜索、轮播、公告、推荐、好友动态</td><td>首页只做「找书」，其它入口放导航</td></tr>
+      <tr><td>按钮说人话</td><td>「确定」「提交」「OK」</td><td>「提交订单」「申请退款」「确认收货」</td></tr>
+      <tr><td>错误提示给下一步</td><td>「操作失败」</td><td>「这本书刚刚被买走了，看看相似教材？」</td></tr>
+      <tr><td>危险操作二次确认</td><td>点一下直接删订单</td><td>「确定取消订单？取消后书籍将重新上架」+ 确认按钮</td></tr>
+      <tr><td>空状态给引导</td><td>一片空白 + 「暂无数据」</td><td>「还没有订单，去看看有什么教材在卖」+ 按钮</td></tr>
+      <tr><td>加载/失败/无权限三态齐全</td><td>只画了理想状态</td><td>每页都设计 loading / error / empty</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3>3.7 可访问性（a11y）最低要求</h3>
+  <ul>
+    <li>正文与背景对比度 ≥ 4.5:1（用在线对比度工具一测便知，很多学生项目连 3:1 都不到）。</li>
+    <li>不要只用颜色区分状态——加上文字或图标（色弱用户看不出「已支付」的橙色和「待支付」的黄色）。</li>
+    <li>表单控件必须有可见的 label，不能只有 placeholder（placeholder 一输入就消失，且屏幕阅读器不友好）。</li>
+    <li>键盘可达：Tab 顺序合理，弹窗能 Esc 关闭，焦点可见。</li>
+    <li>移动端：先设计手机版（校园场景多为手机使用），再考虑桌面版。</li>
+  </ul>
+
+  <div class="ai">
+    <p class="h">AI 在原型阶段的用法</p>
+    <p><strong>用法一（结构化产出）：</strong>让 AI 从你的功能模块表和状态机，生成「页面清单 + 每页的区块 + 每页需要的接口字段」草稿。它能帮你穷举页面，然后你筛。</p>
+    <pre><code>根据我给的功能模块表和订单状态机，生成页面清单。
+要求：
+1) 每个页面标注：页面目标、用户在此完成的唯一任务、所需区块、需要的后端接口与字段
+2) 订单相关页面必须根据「当前状态」列出该状态下允许出现的操作按钮
+3) 每个列表页额外给出 loading / empty / error 三种状态的文案
+不要生成视觉样式，只出结构。
+【粘贴模块表 + 状态转移表】</code></pre>
+    <p><strong>用法二（挑 UX 毛病）：</strong>把线框描述（甚至手绘截图）交给 AI，让它做「新手用户视角」审查：哪里会看不懂、哪里可能点错、哪里缺少反馈。</p>
+    <p><strong>用法三（生成前端实现）：</strong>当线框定稿后，用 AI 从线框生成组件代码或 Tailwind 布局。这是本课之后才生效的阶段——<strong>前提是你已经能判断 AI 生成的代码对不对</strong>，而判断的依据正是你手里这份设计。</p>
+    <p><strong>反例：</strong>直接说「帮我设计一个二手书网站的首页」。你会得到一个电商模板，和你的状态机、接口、权限毫无关系。</p>
+  </div>
+
+  <details>
+    <summary>动手任务 3-A：给订单流程画 4 个状态下的订单详情页（40 分钟）</summary>
+    <div class="d-body">
+      <p>对「待支付 / 已支付 / 待交接 / 退款中」四种状态，各画一张订单详情页线框（纸笔或画图工具均可），每张必须包含：</p>
+      <ul>
+        <li>状态条的当前节点位置</li>
+        <li>该状态下<strong>允许</strong>的操作按钮（照状态转移表来，别自创）</li>
+        <li>该状态下<strong>禁止</strong>的操作及原因提示（如「交接后不可取消」）</li>
+        <li>加载中、空数据、失败三种状态各一句文案</li>
+      </ul>
+      <p style="margin-top:12px"><strong>自检：</strong>四张图里的按钮集合，是否刚好覆盖状态转移表中该状态的全部出口事件？多一个就是设计缺陷，少一个就是漏设计。</p>
+    </div>
+  </details>
+</section>
+
+<!-- ============ 第 4 章 ============ -->
+<section class="chapter" id="ch4">
+  <div class="chapter-head">
+    <span class="chapter-no">04</span>
+    <h2>系统架构设计与技术选型</h2>
+    <p class="sub">解决两个问题：系统的骨架长什么样？为什么用这套技术而不是那套？</p>
+  </div>
+
+  <div class="card">
+    <p class="card-title"><span class="tag">一句话</span>架构设计＝在「质量目标」约束下，对系统的结构、边界、通信方式、技术栈做出<strong>有依据的取舍</strong>。</p>
+    <p>架构不是画一堆方框加箭头，而是<strong>做决策</strong>。每一个方框都该对应一句「我们为什么这么切」，每一条线都该对应一句「为什么它们要通信」。答不上来的，说明还没想清楚。</p>
+  </div>
+
+  <h3>4.1 先定质量目标（不然后面全是空谈）</h3>
+  <p>架构好不好，只能对照目标来评判。开始设计前，先把非功能需求<strong>量化</strong>。</p>
+  <div class="tbl-scroll">
+  <table>
+    <thead><tr><th>质量属性</th><th>学生版常见写法（不合格）</th><th>合格写法（可验证）</th><th>怎么验证</th></tr></thead>
+    <tbody>
+      <tr><td>性能</td><td>「要快」</td><td>「书籍列表接口 P95 响应 &lt; 300ms」</td><td>压测脚本</td></tr>
+      <tr><td>并发</td><td>「支持多人使用」</td><td>「峰值 200 并发下错误率 &lt; 0.1%」</td><td>压测</td></tr>
+      <tr><td>可用性</td><td>「不能挂」</td><td>「核心下单链路可用性 99.9%」</td><td>监控告警</td></tr>
+      <tr><td>一致性</td><td>「数据要准」</td><td>「下单与库存锁定强一致；消息通知最终一致（≤5s）」</td><td>并发测试 + 延迟监控</td></tr>
+      <tr><td>可维护</td><td>「代码要好维护」</td><td>「新同学 1 天内能独立提交订单模块改动」</td><td>上手实测</td></tr>
+      <tr><td>成本</td><td>「要省钱」</td><td>「月成本 ≤ 50 元，用免费层」</td><td>账单</td></tr>
+      <tr><td>安全</td><td>「要安全」</td><td>「密码用 bcrypt 存储；所有订单接口校验归属」</td><td>安全测试用例</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3>4.2 四步架构法</h3>
+  <ol class="steps">
+    <li><div class="st-t">第一步：把质量目标变成约束</div><div class="st-d">从上表挑出 3–5 条最关键的，写在架构文档最前面。比如书接力：并发 200、成本 ≤50 元、3 人 3 个月。</div></li>
+    <li><div class="st-t">第二步：拆「计算流」和「数据流」</div><div class="st-d">计算流＝请求怎么走；数据流＝数据怎么进来、怎么落库、怎么出去。先画这两张图，比直接选框架靠谱得多。</div></li>
+    <li><div class="st-t">第三步：选架构风格</div><div class="st-d">单体？模块化单体？微服务？事件驱动？先选风格，再选技术。</div></li>
+    <li><div class="st-t">第四步：选技术栈并写决策记录</div><div class="st-d">每个关键选择写一条 ADR（Architecture Decision Record）：背景、选项、决定、后果。三个月后你不会记得为什么用 A 不用 B，ADR 会记得。</div></li>
+  </ol>
+
+  <h3>4.3 架构风格：什么时候用什么</h3>
+  <div class="tbl-scroll">
+  <table>
+    <thead><tr><th>风格</th><th>长什么样</th><th>适合</th><th>代价</th></tr></thead>
+    <tbody>
+      <tr><td><strong>分层单体</strong></td><td>表现层 → 应用层 → 领域层 → 基础设施层，同一个部署单元</td><td>绝大多数学生项目、绝大多数中小系统</td><td>规模大了以后扩展受限</td></tr>
+      <tr><td><strong>模块化单体</strong></td><td>单体，但内部按业务模块划包，模块间只走公开接口</td><td>想为将来拆微服务留门，但当下不想付运维代价</td><td>需要严格纪律（模块不能互相偷看内部）</td></tr>
+      <tr><td><strong>微服务</strong></td><td>订单、书籍、支付各自独立部署，服务间走网络调用</td><td>团队 ≥ 10 人、某模块需独立扩容、有强合规隔离要求</td><td>分布式带来的复杂度：网络故障、分布式事务、观测成本陡增</td></tr>
+      <tr><td><strong>事件驱动</strong></td><td>各模块只发事件，谁关心谁订阅（如消息通知）</td><td>需要「一个动作触发多个下游」的场景</td><td>链路追踪困难，调试成本高</td></tr>
+      <tr><td><strong>Serverless</strong></td><td>函数 + 托管数据库，按量计费</td><td>流量波动大、有现成 BaaS 可用</td><td>冷启动、厂商锁定、长任务不友好</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="note danger">
+    <span class="h">给 3 人团队的最重要一条建议</span>
+    <p><strong>不要上微服务。</strong>不是因为「简单」，而是因为微服务要付出的是<strong>分布式系统税</strong>：服务间调用会失败要重试、数据会不一致要补偿、日志散在各处要聚合链路、部署从 1 个变成 8 个。这笔税要用「团队规模」来还——业界经验值是每微服务至少配 0.5–1 个运维/后端。3 个人的团队上 6 个微服务，等于 3 个人当 6 个运维。</p>
+    <p>正确做法：<strong>模块化单体 + 清晰的模块边界 + 事件解耦</strong>。等你真的遇到「订单模块需要单独扩容」时，再把它拆出去——那时你有了真实数据支撑决策，而不是为了简历好看。</p>
+  </div>
+
+  <h3>4.4 分层：每层干什么，依赖往哪边倒</h3>
+  <div class="tbl-scroll">
+  <table>
+    <thead><tr><th>层</th><th>职责</th><th>能不能依赖别的层</th><th>书接力举例</th></tr></thead>
+    <tbody>
+      <tr><td>表现层 / 接口层</td><td>接收请求、校验入参格式、组装响应、HTTP 状态码</td><td>只依赖应用层</td><td><code>POST /orders</code> 控制器</td></tr>
+      <tr><td>应用层</td><td>编排用例：开启事务、调用多个领域能力、发事件</td><td>依赖领域层</td><td>「创建订单」用例：校验书 → 锁库存 → 建单 → 发事件</td></tr>
+      <tr><td>领域层</td><td>业务规则与状态机，<strong>不依赖任何框架和数据库</strong></td><td>不依赖其它层（最干净的一层）</td><td>订单状态机、金额计算规则、退款守卫条件</td></tr>
+      <tr><td>基础设施层</td><td>数据库访问、缓存、第三方 SDK、文件存储</td><td>实现应用/领域层定义的接口</td><td>MySQL 仓储、Redis 缓存实现、支付网关客户端</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <div class="note tip">
+    <span class="h">依赖倒置：让领域层不认识 Spring</span>
+    <p>「领域层不依赖框架」听起来抽象，其实有很实际的好处：你的状态机代码可以<strong>不启动数据库、不启动 Spring 就跑单元测试</strong>，跑得飞快；将来换框架，这块代码一行不用改。这在考试和面试里都属于加分项。</p>
+  </div>
+
+  <h3>4.5 书接力的架构图</h3>
+  <figure>
+    <svg viewBox="0 0 900 520" role="img" aria-labelledby="arch t4">
+      <title id="t4">书接力模块化单体架构图</title>
+      <defs><marker id="ar6" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#5d5548"/></marker></defs>
+      <rect width="900" height="520" fill="#fffdf6"/>
+      <!-- layers -->
+      <g font-family="Noto Serif SC, serif">
+        <rect x="20" y="18" width="740" height="72" rx="4" fill="#e2ece7" stroke="#2c5a4d"/>
+        <text x="36" y="42" font-size="13" fill="#22463d">① 客户端层</text>
+        <g font-size="12.5" text-anchor="middle" fill="#3b352b">
+          <rect x="140" y="38" width="130" height="36" rx="3" fill="#fffdf6" stroke="#2c5a4d"/><text x="205" y="61">H5 / 小程序</text>
+          <rect x="290" y="38" width="130" height="36" rx="3" fill="#fffdf6" stroke="#2c5a4d"/><text x="355" y="61">Web 前端</text>
+          <rect x="440" y="38" width="130" height="36" rx="3" fill="#fffdf6" stroke="#2c5a4d"/><text x="505" y="61">管理后台</text>
+        </g>
+
+        <rect x="20" y="104" width="740" height="62" rx="4" fill="#e4ecf4" stroke="#2b4f74"/>
+        <text x="36" y="128" font-size="13" fill="#2b4f74">② 接入层</text>
+        <g font-size="12.5" text-anchor="middle" fill="#3b352b">
+          <rect x="140" y="120" width="180" height="32" rx="3" fill="#fffdf6" stroke="#2b4f74"/><text x="230" y="141">Nginx / HTTPS / 静态资源</text>
+          <rect x="340" y="120" width="200" height="32" rx="3" fill="#fffdf6" stroke="#2b4f74"/><text x="440" y="141">认证中间件（JWT 校验）</text>
+        </g>
+
+        <rect x="20" y="180" width="740" height="122" rx="4" fill="#e2ece7" stroke="#2c5a4d"/>
+        <text x="36" y="204" font-size="13" fill="#22463d">③ 应用层（用例编排）</text>
+        <g font-size="12.5" text-anchor="middle" fill="#3b352b">
+          <rect x="140" y="212" width="140" height="36" rx="3" fill="#fffdf6" stroke="#2c5a4d"/><text x="210" y="235">订单用例</text>
+          <rect x="296" y="212" width="140" height="36" rx="3" fill="#fffdf6" stroke="#2c5a4d"/><text x="366" y="235">书籍用例</text>
+          <rect x="452" y="212" width="140" height="36" rx="3" fill="#fffdf6" stroke="#2c5a4d"/><text x="522" y="235">支付用例</text>
+          <rect x="608" y="212" width="140" height="36" rx="3" fill="#fffdf6" stroke="#2c5a4d"/><text x="678" y="235">评价用例</text>
+          <rect x="140" y="256" width="140" height="36" rx="3" fill="#fffdf6" stroke="#2c5a4d"/><text x="210" y="279">账号用例</text>
+          <rect x="296" y="256" width="140" height="36" rx="3" fill="#fffdf6" stroke="#2c5a4d"/><text x="366" y="279">交接用例</text>
+          <rect x="452" y="256" width="140" height="36" rx="3" fill="#fffdf6" stroke="#2c5a4d"/><text x="522" y="279">通知用例</text>
+          <rect x="608" y="256" width="140" height="36" rx="3" fill="#fffdf6" stroke="#2c5a4d"/><text x="678" y="279">后台用例</text>
+        </g>
+
+        <rect x="20" y="316" width="740" height="76" rx="4" fill="#f7eed3" stroke="#a97c1f"/>
+        <text x="36" y="340" font-size="13" fill="#7a5a12">④ 领域层（纯业务，不依赖框架）</text>
+        <g font-size="12.5" text-anchor="middle" fill="#3b352b">
+          <rect x="150" y="350" width="140" height="30" rx="3" fill="#fffdf6" stroke="#a97c1f"/><text x="220" y="370">订单状态机</text>
+          <rect x="306" y="350" width="140" height="30" rx="3" fill="#fffdf6" stroke="#a97c1f"/><text x="376" y="370">金额计算规则</text>
+          <rect x="462" y="350" width="140" height="30" rx="3" fill="#fffdf6" stroke="#a97c1f"/><text x="532" y="370">库存锁定规则</text>
+          <rect x="618" y="350" width="120" height="30" rx="3" fill="#fffdf6" stroke="#a97c1f"/><text x="678" y="370">信誉分规则</text>
+        </g>
+
+        <rect x="20" y="406" width="740" height="94" rx="4" fill="#ece4d2" stroke="#8b8172"/>
+        <text x="36" y="430" font-size="13" fill="#5d5548">⑤ 基础设施层</text>
+        <g font-size="12.5" text-anchor="middle" fill="#3b352b">
+          <rect x="140" y="440" width="130" height="34" rx="3" fill="#fffdf6" stroke="#8b8172"/><text x="205" y="462">MySQL</text>
+          <rect x="286" y="440" width="130" height="34" rx="3" fill="#fffdf6" stroke="#8b8172"/><text x="351" y="462">Redis</text>
+          <rect x="432" y="440" width="130" height="34" rx="3" fill="#fffdf6" stroke="#8b8172"/><text x="497" y="462">对象存储</text>
+          <rect x="578" y="440" width="160" height="34" rx="3" fill="#fffdf6" stroke="#8b8172"/><text x="658" y="462">第三方支付网关</text>
+          <rect x="150" y="474" width="588" height="20" rx="3" fill="#fffdf6" stroke="#8b8172"/><text x="444" y="489" font-size="11.5">日志 / 监控 / 链路追踪（横切关注点，贯穿各层）</text>
+        </g>
+
+        <!-- side bar -->
+        <rect x="778" y="18" width="104" height="482" rx="4" fill="#f6e5df" stroke="#a53c26"/>
+        <text x="830" y="46" text-anchor="middle" font-size="13" fill="#a53c26">横切</text>
+        <g font-size="11.5" text-anchor="middle" fill="#5d5548">
+          <text x="830" y="120">限流</text>
+          <text x="830" y="180">幂等</text>
+          <text x="830" y="240">审计</text>
+          <text x="830" y="300">事务</text>
+          <text x="830" y="360">缓存</text>
+          <text x="830" y="420">鉴权</text>
+        </g>
+      </g>
+      <g stroke="#5d5548" stroke-width="1.5" fill="none" marker-end="url(#ar6)">
+        <path d="M390 90 L390 100"/>
+        <path d="M390 166 L390 176"/>
+        <path d="M390 302 L390 312"/>
+        <path d="M390 392 L390 402"/>
+      </g>
+      <g stroke="#a53c26" stroke-width="1.3" stroke-dasharray="4 4" fill="none">
+        <path d="M760 250 L790 250"/>
+      </g>
+    </svg>
+    <figcaption>图 4-1　模块化单体架构。右侧红色竖条是「横切关注点」——它们不属于任何业务模块，但每个模块都要用；实现方式通常是一个库/中间件，而不是各自造轮子。</figcaption>
+  </figure>
+
+  <h3>4.6 技术选型：用「打分表」代替「拍脑袋」</h3>
+  <p>选型不是选「最先进的」，是选「<strong>在满足约束的前提下，我们能维护得最好的</strong>」。列候选、列维度、打分、写理由。</p>
+  <div class="tbl-scroll">
+  <table>
+    <thead><tr><th>维度</th><th>权重</th><th>说明</th></tr></thead>
+    <tbody>
+      <tr><td>团队熟悉度</td><td>高</td><td>3 个人都会的框架 &gt; 1 个人会但很先进的框架</td></tr>
+      <tr><td>开发效率</td><td>高</td><td>从零到「能上线」要多久</td></tr>
+      <tr><td>生态与文档</td><td>中</td><td>出问题时能不能搜到答案</td></tr>
+      <tr><td>性能是否够用</td><td>中</td><td>够用即可，别为想象中的百万 QPS 上 Kafka</td></tr>
+      <tr><td>运维成本</td><td>中</td><td>免费额度、学习曲线、故障排查难度</td></tr>
+      <tr><td>招聘/交接</td><td>低</td><td>课程项目权重可以忽略</td></tr>
+      <tr><td>许可证与合规</td><td>低</td><td>商业项目要特别注意 GPL 类传染性协议</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h4>书接力的选型结论（示例）</h4>
+  <div class="tbl-scroll">
+  <table>
+    <thead><tr><th>层次</th><th>候选</th><th>选择</th><th>决定性理由</th></tr></thead>
+    <tbody>
+      <tr><td>前端</td><td>Vue 3 / React / 原生</td><td><strong>Vue 3 + Vite</strong></td><td>组内 2 人熟 Vue；模板语法上手快；移动端 H5 够用</td></tr>
+      <tr><td>后端语言</td><td>Java Spring Boot / Python FastAPI / Node NestJS</td><td><strong>Python FastAPI</strong></td><td>组内 3 人都会 Python；自动生成 OpenAPI 文档，省一大块第 6 章的工作</td></tr>
+      <tr><td>数据库</td><td>MySQL / PostgreSQL / SQLite</td><td><strong>MySQL 8</strong></td><td>需要并发下的行锁做库存；云数据库有免费额度；大家都会</td></tr>
+      <tr><td>缓存</td><td>Redis / Memcached / 不用</td><td><strong>Redis</strong></td><td>缓存书籍详情 + 库存锁；免费层够用</td></tr>
+      <tr><td>对象存储</td><td>OSS / COS / 自建</td><td><strong>云对象存储</strong></td><td>存书影图片；不自己写文件服务</td></tr>
+      <tr><td>部署</td><td>单机云服务器 / Serverless / 平台托管</td><td><strong>单机云服务器 + Docker Compose</strong></td><td>最便宜、最直观；三个人都会用 Docker；月成本 &lt; 30 元</td></tr>
+      <tr><td>监控</td><td>自建 / 云监控 / 第三方</td><td><strong>云监控 + 结构化日志</strong></td><td>免费；够定位问题</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="card plain">
+    <p class="card-title"><span class="tag">ADR 示例</span>ADR-003：后端框架选择</p>
+    <p><strong>背景</strong>：3 人团队、3 个月工期、需要 REST API + 自动文档 + 数据库事务。</p>
+    <p><strong>选项</strong>：① Spring Boot（团队 1 人熟悉）② FastAPI（3 人熟悉）③ NestJS（团队 1 人熟悉）。</p>
+    <p><strong>决定</strong>：选 FastAPI。</p>
+    <p><strong>后果</strong>：<em class="k">正面</em>——开发快、自动产出 OpenAPI 文档（直接服务第 6 章）、团队无学习成本；<em class="k">负面</em>——异步生态不如 Java 成熟，高并发场景下需要额外调优；<em class="k">缓解</em>——并发目标只有 200，暂不构成风险。</p>
+  </div>
+
+  <div class="ai">
+    <p class="h">AI 在架构阶段的用法</p>
+    <p><strong>用法一（生成候选清单）：</strong>「给我 3 个适合 3 人团队校园二手交易平台的架构风格候选，每个列出优点、代价、运维成本、常见坑。」AI 给你素材，你来做取舍。</p>
+    <p><strong>用法二（对抗式评审）：</strong>把你画好的架构图（可以用 mermaid 文本喂给它）和质量目标一起给它，让它扮演架构评审提问：「这个架构怎么扛住热点书籍的并发下单？」「Redis 挂了会怎样？」「这个分层真的解耦了吗？」<strong>AI 提的问题里通常有你没想到的</strong>——但答案仍需你基于真实约束判断。</p>
+    <p><strong>用法三（写 ADR 草稿）：</strong>把选项和你的决定给它，让它按 ADR 模板补全「后果」部分，特别是负面后果（AI 很擅长补充你只想写好话的那部分）。</p>
+    <p><strong>反面提醒：</strong>AI 很爱推荐「微服务 + Kafka + Kubernetes + Redis + Elasticsearch」全家桶。把它推荐的中间件数量砍到 3 个以内，再问自己每个是否真的必要。</p>
+  </div>
+
+  <details>
+    <summary>动手任务 4-A：为你的项目做一次「约束优先」的架构设计（45 分钟）</summary>
+    <div class="d-body">
+      <ol>
+        <li>写 3–5 条<strong>量化</strong>质量目标（并发、响应时间、数据量、成本、工期、团队人数）。</li>
+        <li>画一张分层架构图（至少 4 层：客户端、接入、应用、领域、基础设施）。</li>
+        <li>画一张<strong>时序/数据流图</strong>：以「用户下单」为例，从点击到完成走过了哪些层。</li>
+        <li>做选型打分表，至少 5 个技术点，每个写一句决定性理由。</li>
+        <li>写 2 条 ADR，其中一条必须诚实写出你选择的<strong>负面后果</strong>。</li>
+      </ol>
+      <p style="margin-top:12px"><strong>自检：</strong>每个方框都能回答「为什么存在」；每个技术选择都能回答「为什么不是另外那个」；你写下的负面后果是真话还是场面话？</p>
+    </div>
+  </details>
+</section>
+
+<!-- ============ 第 5 章 ============ -->
+<section class="chapter" id="ch5">
+  <div class="chapter-head">
+    <span class="chapter-no">05</span>
+    <h2>数据库三层建模与 ER 设计</h2>
+    <p class="sub">解决三个问题：业务上有哪些「东西」？它们之间是什么关系？最终怎么落到具体的表和字段？</p>
+  </div>
+
+  <div class="card">
+    <p class="card-title"><span class="tag">一句话</span>数据库建模＝把业务世界翻译成结构化数据。分三层做，每层解决不同的问题。</p>
+    <p>很多同学一上来就建表，结果字段重复、关系混乱、后期无法扩展。三层建模的价值就在于：<strong>概念层保证你想清楚了，逻辑层保证结构不重复，物理层保证能跑得快</strong>。</p>
+  </div>
+
+  <figure>
+    <svg viewBox="0 0 900 260" role="img" aria-labelledby="three t5">
+      <title id="t5">概念层、逻辑层、物理层三层建模</title>
+      <defs><marker id="ar7" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#5d5548"/></marker></defs>
+      <rect width="900" height="260" fill="#fffdf6"/>
+      <g font-family="Noto Serif SC, serif">
+        <rect x="40" y="26" width="820" height="60" rx="4" fill="#e2ece7" stroke="#2c5a4d" stroke-width="1.6"/>
+        <text x="62" y="52" font-size="15" fill="#22463d">① 概念层（业务视角 · 面向业务人员）</text>
+        <text x="62" y="73" font-size="12.5" fill="#5d5548">实体 · 属性 · 关系 · 业务规则　→　产出：概念模型 / 领域词汇表　「买家买一本书」</text>
+
+        <rect x="40" y="102" width="820" height="60" rx="4" fill="#e4ecf4" stroke="#2b4f74" stroke-width="1.6"/>
+        <text x="62" y="128" font-size="15" fill="#2b4f74">② 逻辑层（数据视角 · 面向 DBA / 开发）</text>
+        <text x="62" y="149" font-size="12.5" fill="#5d5548">关系模式 · 主键外键 · 范式 · 完整性约束　→　产出：关系模式表　「BOOK、ORDER、ORDER_ITEM…」</text>
+
+        <rect x="40" y="178" width="820" height="60" rx="4" fill="#f7eed3" stroke="#a97c1f" stroke-width="1.6"/>
+        <text x="62" y="204" font-size="15" fill="#7a5a12">③ 物理层（存储视角 · 面向 DBMS）</text>
+        <text x="62" y="225" font-size="12.5" fill="#5d5548">字段类型/长度 · 索引 · 分区 · 约束 · 存储引擎　→　产出：DDL 脚本　「VARCHAR(64) + idx_order_user…」</text>
+      </g>
+      <g stroke="#5d5548" stroke-width="1.5" fill="none" marker-end="url(#ar7)">
+        <path d="M450 88 L450 98"/>
+        <path d="M450 164 L450 174"/>
+      </g>
+      <g stroke="#a53c26" stroke-width="1.4" fill="none" stroke-dasharray="5 4" marker-end="url(#ar7)">
+        <path d="M870 240 L870 56 L866 56"/>
+      </g>
+      <text x="548" y="252" font-family="Noto Serif SC, serif" font-size="11.5" fill="#a53c26">↑ 性能问题会反推逻辑层结构调整</text>
+    </svg>
+    <figcaption>图 5-1　三层建模不是自上而下的单向瀑布——当物理层跑不动时，你要回头改逻辑层（比如把一张大表拆成主表+明细表）。</figcaption>
+  </figure>
+
+  <h3>5.1 概念层：先问「业务世界里有什么东西」</h3>
+  <p>概念层<strong>完全不谈数据库</strong>。它的产出是实体、属性、关系和业务规则，可以直接拿给产品经理和测试同学看，他们不需要懂数据库也能读懂。</p>
+
+  <h4>找实体：名词就是候选</h4>
+  <p>回到第 2 章的流程和状态机：里面出现的<strong>反复出现的名词</strong>就是实体候选。书接力里：用户、书籍、订单、订单项、支付单、退款单、评价、消息、分类、交接记录。</p>
+
+  <div class="note warn">
+    <span class="h">别把「动作」当实体</span>
+    <p>「下单」是动作，不是实体，它属于订单。「收藏」是动作，它应该作为用户和书籍的一个<strong>关系</strong>存在，而不是一个叫「收藏表」的表。</p>
+  </div>
+
+  <h4>定关系：三种基数</h4>
+  <div class="tbl-scroll">
+  <table>
+    <thead><tr><th>关系</th><th>含义</th><th>例子</th><th>建模提示</th></tr></thead>
+    <tbody>
+      <tr><td>1 : 1</td><td>一对一</td><td>一个用户 ↔ 一份学生证</td><td>把 1 端的主键作为外键放到 N 端，通常不单独建表</td></tr>
+      <tr><td>1 : N</td><td>一对多</td><td>一个用户 ↔ 多个订单</td><td>N 端存 1 端的主键作为外键</td></tr>
+      <tr><td>M : N</td><td>多对多</td><td>多个订单 ↔ 多本书籍</td><td><strong>必须拆成关联表</strong>，关联表通常带自己的业务属性</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p>书接力的「订单 ↔ 书籍」就是 M:N，必须拆出订单项表。而订单项不是纯关联表——它有「成交价」「成色」等属性，这些是<strong>下单那一刻的快照</strong>，这一点极其重要（见 5.4）。</p>
+
+  <h3>5.2 逻辑层：规范化与主键设计</h3>
+
+  <h4>什么是规范化（用大白话）</h4>
+  <div class="tbl-scroll">
+  <table>
+    <thead><tr><th>范式</th><th>人话解释</th><th>反例</th></tr></thead>
+    <tbody>
+      <tr><td>1NF</td><td>每个字段只放一个值，不能塞数组或逗号串</td><td><code>tags = "高数,线代,概率"</code> 放一个字段里</td></tr>
+      <tr><td>2NF</td><td>非主键字段不能「部分依赖」复合主键</td><td>订单明细表主键是(订单号,行号)，却把订单总价也存进去</td></tr>
+      <tr><td>3NF</td><td>非主键字段不能传递依赖主键（即不能有「间接依赖」）</td><td>订单表里存 <code>买家所在学校</code>——学校只依赖用户，与订单无关</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p>规范化的本质是<strong>消除重复</strong>。重复不只是浪费空间，更重要的是<strong>更新不一致</strong>：同一个信息存了两份，改了一处忘了另一处，数据就自相矛盾了——这是线上事故的高频来源。</p>
+
+  <div class="note tip">
+    <span class="h">但快照字段是故意的「反范式」</span>
+    <p>订单项里存「成交价 18 元」，即便书籍当前价格改成 20 元，这条订单项仍然记 18 元。<strong>这不是设计错误，是刻意为之</strong>——因为订单要反映「当时发生了什么」。这种字段叫「快照字段」，是业务规则决定的，不是偷懒。要在文档里明确写出来：哪些字段是快照、快照时点是什么时候。</p>
+  </div>
+
+  <h4>主键怎么选</h4>
+  <div class="grid2">
+    <div class="mini"><h5>自增 ID（bigint）</h5><p>优点：简单、索引小、写入快。缺点：可猜测（能看出总订单数）、跨库合并麻烦、分布式要协调。<strong>适合</strong>：内部主键。</p></div>
+    <div class="mini"><h5>UUID / ULID</h5><p>优点：全局唯一、可离线生成、不泄露业务量。缺点：占空间、随机写入影响索引。<strong>适合</strong>：需要对外暴露或分库场景；用 ULID（带时间前缀）能兼顾。</p></div>
+    <div class="mini"><h5>业务主键</h5><p>如订单号「BR20240513001」。优点：可读、可对账、可作为幂等键。<strong>适合</strong>：对外暴露的编号；注意它不能替代内部主键（规则一旦变就麻烦）。</p></div>
+    <div class="mini"><h5>通用建议</h5><p>内部用 <code>bigint</code> 自增做主键，对外用<strong>独立的业务编号</strong>做唯一索引。两者分离，是很多生产系统的标准做法。</p></div>
+  </div>
+
+  <h3>5.3 画 ER 图</h3>
+  <p>ER 图（Entity-Relationship Diagram）就是「实体关系的地图」。画法约定：</p>
+  <ul>
+    <li><strong>实体</strong>＝矩形（表名 + 关键属性），</li>
+    <li><strong>关系</strong>＝线上标注关系名 + 两端标基数（1、N、M），</li>
+    <li><strong>属性</strong>＝列出来，主键加下划线或标 PK，外键标 FK。</li>
+  </ul>
+
+  <figure>
+    <svg viewBox="0 0 900 560" role="img" aria-labelledby="er t6">
+      <title id="t6">书接力核心实体关系图</title>
+      <rect width="900" height="560" fill="#fffdf6"/>
+      <g font-family="JetBrains Mono, monospace" font-size="11" fill="#3b352b">
+        <!-- USER -->
+        <g>
+          <rect x="30" y="60" width="176" height="112" rx="4" fill="#e2ece7" stroke="#2c5a4d" stroke-width="1.6"/>
+          <rect x="30" y="60" width="176" height="24" rx="4" fill="#2c5a4d"/>
+          <text x="118" y="77" text-anchor="middle" font-size="12.5" fill="#f6f1e3">USER</text>
+          <text x="42" y="102">PK id</text>
+          <text x="42" y="120">nickname</text>
+          <text x="42" y="138">email</text>
+          <text x="42" y="156">password_hash</text>
+          <text x="42" y="170" font-size="10" fill="#8b8172">（唯一索引）</text>
+        </g>
+        <!-- CATEGORY -->
+        <g>
+          <rect x="30" y="300" width="176" height="76" rx="4" fill="#e2ece7" stroke="#2c5a4d" stroke-width="1.6"/>
+          <rect x="30" y="300" width="176" height="24" rx="4" fill="#2c5a4d"/>
+          <text x="118" y="317" text-anchor="middle" font-size="12.5" fill="#f6f1e3">CATEGORY</text>
+          <text x="42" y="342">PK id</text>
+          <text x="42" y="360">name</text>
+        </g>
+        <!-- BOOK -->
+        <g>
+          <rect x="300" y="150" width="200" height="150" rx="4" fill="#f7eed3" stroke="#a97c1f" stroke-width="1.6"/>
+          <rect x="300" y="150" width="200" height="24" rx="4" fill="#a97c1f"/>
+          <text x="400" y="167" text-anchor="middle" font-size="12.5" fill="#fffdf6">BOOK</text>
+          <text x="312" y="192">PK id</text>
+          <text x="312" y="210">FK seller_id → USER</text>
+          <text x="312" y="228">FK category_id → CATEGORY</text>
+          <text x="312" y="246">title / isbn / edition</text>
+          <text x="312" y="264">price / condition</text>
+          <text x="312" y="282">status</text>
+        </g>
+        <!-- ORDER -->
+        <g>
+          <rect x="580" y="150" width="200" height="150" rx="4" fill="#e4ecf4" stroke="#2b4f74" stroke-width="1.6"/>
+          <rect x="580" y="150" width="200" height="24" rx="4" fill="#2b4f74"/>
+          <text x="680" y="167" text-anchor="middle" font-size="12.5" fill="#fffdf6">ORDER</text>
+          <text x="592" y="192">PK id</text>
+          <text x="592" y="210">UK order_no</text>
+          <text x="592" y="228">FK buyer_id → USER</text>
+          <text x="592" y="246">status / total_amount</text>
+          <text x="592" y="264">handover_method</text>
+          <text x="592" y="282">created_at / expires_at</text>
+        </g>
+        <!-- ORDER_ITEM -->
+        <g>
+          <rect x="580" y="380" width="200" height="130" rx="4" fill="#e4ecf4" stroke="#2b4f74" stroke-width="1.6"/>
+          <rect x="580" y="380" width="200" height="24" rx="4" fill="#2b4f74"/>
+          <text x="680" y="397" text-anchor="middle" font-size="12.5" fill="#fffdf6">ORDER_ITEM</text>
+          <text x="592" y="422">PK id</text>
+          <text x="592" y="440">FK order_id → ORDER</text>
+          <text x="592" y="458">FK book_id → BOOK</text>
+          <text x="592" y="476">unit_price ★快照</text>
+          <text x="592" y="494">condition ★快照</text>
+        </g>
+        <!-- REVIEW -->
+        <g>
+          <rect x="300" y="380" width="200" height="130" rx="4" fill="#e2ece7" stroke="#2c5a4d" stroke-width="1.6"/>
+          <rect x="300" y="380" width="200" height="24" rx="4" fill="#2c5a4d"/>
+          <text x="400" y="397" text-anchor="middle" font-size="12.5" fill="#fffdf6">REVIEW</text>
+          <text x="312" y="422">PK id</text>
+          <text x="312" y="440">FK order_id → ORDER (1:1)</text>
+          <text x="312" y="458">FK reviewer_id → USER</text>
+          <text x="312" y="476">rating / content</text>
+          <text x="312" y="494">UK(order_id, reviewer_id)</text>
+        </g>
+      </g>
+      <!-- relations -->
+      <g stroke="#5d5548" stroke-width="1.5" fill="none">
+        <path d="M206 100 L300 178"/>
+        <path d="M206 320 L300 272"/>
+        <path d="M500 200 L576 200"/>
+        <path d="M680 302 L680 376"/>
+        <path d="M576 424 L504 424"/>
+        <path d="M400 302 L400 376"/>
+      </g>
+      <g font-family="Noto Serif SC, serif" font-size="11.5" fill="#5d5548">
+        <text x="228" y="128">发布 1 : N</text>
+        <text x="226" y="300">分类 1 : N</text>
+        <text x="508" y="192">下单 M : N</text>
+        <text x="690" y="346">1 : N</text>
+        <text x="512" y="416">产生 1 : 1</text>
+        <text x="330" y="346">评价 1 : N</text>
+      </g>
+      <text x="30" y="30" font-family="Noto Serif SC, serif" font-size="13" fill="#8b8172">★ = 快照字段（下单时刻的值，后续不随主数据变化）</text>
+    </svg>
+    <figcaption>图 6-1　书接力核心 ER 图。刻意没画 MESSAGE 表的细节，因为它在第 9 章实战中作为扩展项出现。</figcaption>
+  </figure>
+
+  <h3>5.4 物理层：字段、索引与约束</h3>
+  <p>逻辑层说「有一张订单表」，物理层要回答：字段用什么类型？多长？要不要默认值？索引建在哪？</p>
+
+  <div class="tbl-scroll">
+  <table>
+    <thead><tr><th>决策点</th><th>原则</th><th>例子</th></tr></thead>
+    <tbody>
+      <tr><td>金额</td><td>用整数分或 decimal，<strong>绝不用 float/double</strong></td><td><code>total_amount DECIMAL(10,2)</code></td></tr>
+      <tr><td>字符串</td><td>定长且短的用 CHAR，其余用 VARCHAR 并显式给长度</td><td><code>VARCHAR(64)</code></td></tr>
+      <tr><td>时间</td><td>统一用 UTC 存储，展示时转本地时区</td><td><code>created_at DATETIME</code></td></tr>
+      <tr><td>状态/类型</td><td>用 <code>ENUM</code> 或 <code>CHAR</code>+检查约束，别用魔法数字</td><td><code>status ENUM('CREATED','PAID',...)</code></td></tr>
+      <tr><td>软删除</td><td>需要保留历史用 <code>deleted_at</code>；否则物理删除更简单</td><td><code>deleted_at DATETIME NULL</code></td></tr>
+      <tr><td>审计字段</td><td>每张业务表都要有 created_at / updated_at</td><td>—</td></tr>
+      <tr><td>外键</td><td>能用就用，能挡住脏数据；不用时要自己保证一致</td><td><code>FOREIGN KEY (book_id) REFERENCES book(id)</code></td></tr>
+      <tr><td>唯一约束</td><td>业务唯一性一定要落库，不能只靠代码判断</td><td><code>UNIQUE(order_id, reviewer_id)</code></td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h4>建表脚本示例</h4>
+  <pre><code><span class="k">CREATE TABLE</span> orders (
+  id            BIGINT UNSIGNED <span class="k">PRIMARY KEY</span> AUTO_INCREMENT,
+  order_no     VARCHAR(32)     <span class="k">NOT NULL</span> <span class="k">COMMENT</span> <span class="s">'业务订单号，对外暴露'</span>,
+  buyer_id     BIGINT UNSIGNED <span class="k">NOT NULL</span> <span class="k">COMMENT</span> <span class="s">'下单人'</span>,
+  status       ENUM(<span class="s">'CREATED'</span>,<span class="s">'PAID'</span>,<span class="s">'SHIPPED'</span>,<span class="s">'COMPLETED'</span>,<span class="s">'CANCELLED'</span>,<span class="s">'REFUNDING'</span>,<span class="s">'REFUNDED'</span>,<span class="s">'CLOSED'</span>) <span class="k">NOT NULL</span> <span class="k">DEFAULT</span> <span class="s">'CREATED'</span>,
+  total_amount DECIMAL(10,2)   <span class="k">NOT NULL</span> <span class="k">DEFAULT</span> 0.00,
+  handover_method VARCHAR(32)  <span class="k">NULL</span> <span class="k">COMMENT</span> <span class="s">'交接方式枚举'</span>,
+  expires_at    DATETIME       <span class="k">NOT NULL</span> <span class="k">COMMENT</span> <span class="s">'待支付过期时间 = created_at + 30min'</span>,
+  created_at    DATETIME       <span class="k">NOT NULL</span> <span class="k">DEFAULT</span> CURRENT_TIMESTAMP,
+  updated_at    DATETIME       <span class="k">NOT NULL</span> <span class="k">DEFAULT</span> CURRENT_TIMESTAMP <span class="k">ON UPDATE</span> CURRENT_TIMESTAMP,
+  deleted_at    DATETIME       <span class="k">NULL</span>,
+  <span class="k">UNIQUE KEY</span> uk_order_no (order_no),
+  <span class="k">KEY</span> idx_buyer_status (buyer_id, status, created_at),  <span class="c">-- 我的订单列表</span>
+  <span class="k">KEY</span> idx_status_expire (status, expires_at),           <span class="c">-- 超时取消扫描任务</span>
+  <span class="k">CONSTRAINT</span> fk_orders_buyer <span class="k">FOREIGN KEY</span> (buyer_id) <span class="k">REFERENCES</span> users(id)
+) <span class="k">ENGINE</span>=InnoDB <span class="k">DEFAULT CHARSET</span>=utf8mb4 <span class="k">COLLATE</span>=utf8mb4_0900_ai_ci;</code></pre>
+
+  <div class="note tip">
+    <span class="h">索引的直觉</span>
+    <p>索引像一本书的目录，代价是写入变慢、占空间。两条经验：<br>
+    ① <strong>最左前缀</strong>——索引 <code>(buyer_id, status, created_at)</code> 能高效支持「按 buyer_id 查」「按 buyer_id+status 查」「按 buyer_id+status 按时间排序」，但<strong>单独按 status 查用不上它</strong>。<br>
+    ② <strong>为查询建索引，而不是为字段建索引</strong>。先写出真实的查询语句，再决定索引；建完用 <code>EXPLAIN</code> 看有没有真的走索引。</p>
+  </div>
+
+  <h3>5.5 建模的常见错误</h3>
+  <div class="tbl-scroll">
+  <table>
+    <thead><tr><th>错误</th><th>症状</th><th>后果</th></tr></thead>
+    <tbody>
+      <tr><td>JSON 字段塞一切</td><td>表里一个 <code>detail JSON</code> 存所有业务数据</td><td>无法建索引、无法校验、查询靠全表扫</td></tr>
+      <tr><td>隐式多对多</td><td>订单表里存 <code>book_ids VARCHAR</code></td><td>无法按书查订单、无法挂关联属性</td></tr>
+      <tr><td>缺唯一约束</td><td>靠代码 <code>if not exists</code> 防重复</td><td>并发下必然出现重复数据</td></tr>
+      <tr><td>没写清谁是快照</td><td>订单项实时关联书籍表取价格</td><td>改价后历史订单金额全变</td></tr>
+      <tr><td>字段类型随意</td><td>金额用 <code>FLOAT</code>、手机号用 <code>INT</code></td><td>精度丢失、溢出</td></tr>
+      <tr><td>时间没统一时区</td><td>一部分存 UTC 一部分存本地</td><td>跨时区统计全错</td></tr>
+      <tr><td>没区分「状态」与「操作」</td><td>把「已退款」和「申请退款」混为一谈</td><td>状态机混乱，见第 2 章</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="ai">
+    <p class="h">AI 在数据建模阶段的用法</p>
+    <p><strong>用法一（从需求抽实体）：</strong>把第 1、2 章的功能模块表和状态机给 AI，让它列出候选实体、属性、主外键、关系基数，然后你逐条核对——特别检查 M:N 是否被正确拆开。</p>
+    <p><strong>用法二（当"反范式审查员"）：</strong></p>
+    <pre><code>下面是我设计的数据库表结构。请扮演数据库评审专家，重点检查：
+1) 范式问题：是否存在非主键字段对非主键字段的依赖（3NF 违反）
+2) 更新不一致风险：哪些字段在多处冗余存储
+3) 缺失的约束：唯一性、非空、外键、取值范围
+4) 类型选择问题：金额、时间、枚举、字符串长度
+5) 并发与锁：哪些操作需要行锁/乐观锁，当前设计是否可能超卖
+6) 索引：按我列出的查询场景判断索引是否够用
+输出问题清单：表名 → 问题 → 风险 → 建议。只给清单，不要重写我的 DDL。
+【粘贴 DDL + 查询场景列表】</code></pre>
+    <p><strong>用法三（生成 DDL 与迁移脚本）：</strong>确认设计无误后，让 AI 生成 MySQL DDL、索引、种子数据（seed）。<strong>但你必须逐行审</strong>——AI 生成的 DDL 经常漏掉外键、长度给得不够、或者默默加上你没要的索引。</p>
+    <p><strong>用法四（反向生成文档）：</strong>让 AI 从最终 DDL 反向生成 ER 图和字段说明，作为交叉校验——如果反推出来的关系和你设计的不一样，说明设计里有遗漏。</p>
+  </div>
+
+  <details>
+    <summary>动手任务 5-A：把书接力的 ER 画完整并落到 DDL（60 分钟）</summary>
+    <div class="d-body">
+      <ol>
+        <li>在纸上/工具里补齐至少 8 张表：users、categories、books、orders、order_items、payments、refunds、reviews。</li>
+        <li>标出每张表的主键、外键、唯一约束。</li>
+        <li>用一句话标出每个字段的<strong>业务含义</strong>（不是类型，是「它是什么」）。</li>
+        <li>写出 5 条真实查询语句，并为每条指出应走哪个索引。</li>
+        <li>写出 DDL 脚本，并<strong>标出 3 个刻意的「反范式」字段并解释原因</strong>（提示：成交价、成色、买家昵称快照？）。</li>
+      </ol>
+    </div>
+  </details>
+</section>
+
+<!-- ============ 第 6 章 ============ -->
+<section class="chapter" id="ch6">
+  <div class="chapter-head">
+    <span class="chapter-no">06</span>
+    <h2>API 设计与数据契约</h2>
+    <p class="sub">解决三个问题：模块之间怎么说话？说话时用哪种格式？格式变了老代码怎么办？</p>
+  </div>
+
+  <div class="card">
+    <p class="card-title"><span class="tag">一句话</span>API 设计＝给系统开对外「窗口」，规定每个窗口要什么、给什么、什么时候不给、错了怎么表达。数据契约＝把「窗口的形状」写成机器可读的正式文件。</p>
+    <p>可以类比成快递：API 是「寄件流程」（下单 → 揽收 → 运输 → 派送），数据契约是「面单格式」。面单格式改了一版，寄件人按新格式填，物流系统按新格式读——<strong>但如果只有一个人改了，就全乱了</strong>。契约的作用就是让改动是「协商出来的」，而不是「通知一下就完事」。</p>
+  </div>
+
+  <h3>6.1 先理解「契约」这两个字</h3>
+  <p>一份 API 文档不只是一张接口清单，它是一份<strong>承诺</strong>。承诺的内容包括：</p>
+  <div class="grid2">
+    <div class="mini"><h5>形状（Shape）</h5><p>请求体有哪些字段、类型是什么、哪些必填；响应体长什么样；错误响应长什么样。</p></div>
+    <div class="mini"><h5>语义（Semantics）</h5><p>这个接口是干什么的；同一个状态码在不同接口含义是否一致；幂等吗；要不要鉴权；分页怎么翻。</p></div>
+    <div class="mini"><h5>兼容性（Compatibility）</h5><p>以后新增字段行不行？删除字段行不行？改字段类型行不行？这些必须提前说清楚，否则合作方会炸。</p></div>
+    <div class="mini"><h5>版本与生命周期（Versioning）</h5><p>什么时候废弃、怎么通知、多久过渡期。不写这一条，接口会永远改不动。</p></div>
+  </div>
+  <div class="note danger">
+    <span class="h">AI 时代这条更值钱</span>
+    <p>以前「写完代码再补接口文档」还能凑合；现在 AI 大量生成调用代码，如果契约本身是模糊的，AI 会替你<strong>猜</strong>出一个形状，猜错了还不告诉你。所以<strong>契约必须是机器可读的唯一事实源</strong>——OpenAPI 文件要进代码仓库，代码要由它生成或校验，而不是各写各的。</p>
+  </div>
+
+  <h3>6.2 REST 风格的基本约定</h3>
+  <div class="tbl-scroll">
+  <table>
+    <thead><tr><th>方法</th><th>语义</th><th>是否幂等</th><th>典型路径</th></tr></thead>
+    <tbody>
+      <tr><td>GET</td><td>读取资源</td><td>是</td><td><code>GET /books/{id}</code></td></tr>
+      <tr><td>POST</td><td>创建资源 / 执行动作</td><td>否（需幂等键）</td><td><code>POST /orders</code></td></tr>
+      <tr><td>PUT</td><td>整体替换</td><td>是</td><td><code>PUT /books/{id}</code></td></tr>
+      <tr><td>PATCH</td><td>局部更新</td><td>否（视语义）</td><td><code>PATCH /books/{id}</code></td></tr>
+      <tr><td>DELETE</td><td>删除资源</td><td>是</td><td><code>DELETE /books/{id}</code></td></tr>
+    </tbody>
+  </table>
+  </div>
+  <ul>
+    <li><strong>URL 用名词，不用动词</strong>：<code>/orders</code> 好过 <code>/createOrder</code>。动词应该放在 HTTP 方法里。</li>
+    <li><strong>状态码用对</strong>：200 成功 / 201 已创建 / 400 参数格式错 / 401 未登录 / 403 无权限 / 404 不存在 / 409 状态冲突（如订单已支付不能再取消）/ 422 语义校验失败 / 500 服务端错误。</li>
+    <li><strong>过滤、排序、分页用查询参数</strong>：<code>GET /books?category=12&amp;keyword=数据结构&amp;sort=price_asc&amp;page=1&amp;page_size=20</code></li>
+  </ul>
+
+  <div class="note warn">
+    <span class="h">409 是个被低估的状态码</span>
+    <p>很多学生项目把所有失败都写成 400 或 200 + 错误 message。但「订单状态冲突」和「参数格式错」是<strong>两类完全不同的错误</strong>，前端处理方式也不同：前者要刷新页面重新引导，后者要就地提示重填。用对状态码，前端才写得出正确的交互。</p>
+  </div>
+
+  <h3>6.3 统一错误结构</h3>
+  <pre><code>{
+  <span class="s">"code"</span>: <span class="s">"ORDER_STATE_CONFLICT"</span>,          <span class="c">// 机器可读：前端据此分支</span>
+  <span class="s">"message"</span>: <span class="s">"订单已支付，无法取消"</span>,          <span class="c">// 人可读：直接展示</span>
+  <span class="s">"details"</span>: [
+    { <span class="s">"field"</span>: <span class="s">"orderId"</span>, <span class="s">"reason"</span>: <span class="s">"current_status=PAID"</span> }
+  ],
+  <span class="s">"trace_id"</span>: <span class="s">"a1b2c3d4"</span>                <span class="c">// 排障用：一键定位日志</span>
+}</code></pre>
+  <p>好处：前端能用 <code>code</code> 做逻辑分支（比如 <code>ORDER_STATE_CONFLICT</code> → 刷新订单页并提示），能用 <code>message</code> 直接展示，运维能用 <code>trace_id</code> 查日志。三方各取所需，不用在错误 message 里做字符串匹配。</p>
+
+  <h3>6.4 幂等性：POST 重复提交怎么办</h3>
+  <p>用户网络卡了，连点两次「提交订单」——如果没有幂等设计，你会创建两个订单、扣两次钱。这是真实事故。</p>
+  <p>做法：客户端生成一个 <code>Idempotency-Key</code>（UUID），放在请求头里；服务端记住「这个 key 处理过，结果是什么」，重复请求直接返回上次的结果，不再执行。</p>
+  <pre><code><span class="c"># 伪代码：幂等键的实现</span>
+key = request.headers[<span class="s">"Idempotency-Key"</span>]
+<span class="k">if</span> key <span class="k">in</span> redis:                       <span class="c"># 24h 内有效</span>
+    <span class="k">return</span> redis.get(key)                  <span class="c"># 直接返回上次结果</span>
+result = create_order(request.body)
+redis.set(key, result, ex=86400)
+<span class="k">return</span> result</code></pre>
+  <p>注意：订单号本身也可以天然当幂等键——用「买家 ID + 业务唯一标识」生成订单号，重复请求天然撞号。这是更稳妥的做法，因为不依赖客户端配合。</p>
+
+  <h3>6.5 OpenAPI：让契约变成机器可读的文件</h3>
+  <p>OpenAPI（Swagger 规范）用 YAML/JSON 描述整套 API：有哪些路径、每个路径有哪些操作、请求体长什么样、响应有哪些状态码、每个字段什么类型。</p>
+
+  <pre><code><span class="k">openapi:</span> 3.1.0
+<span class="k">info:</span>
+  <span class="k">title:</span> 书接力 API
+  <span class="k">version:</span> 1.0.0
+  <span class="k">description:</span> 校园二手教材流转平台
+<span class="k">servers:</span>
+  - <span class="k">url:</span> https://api.bookrelay.edu.cn/v1
+<span class="k">paths:</span>
+  <span class="k">/orders:</span>
+    <span class="k">post:</span>
+      <span class="k">summary:</span> 创建订单
+      <span class="k">operationId:</span> createOrder
+      <span class="k">parameters:</span>
+        - <span class="k">name:</span> Idempotency-Key
+          <span class="k">in:</span> header
+          <span class="k">required:</span> <span class="k">true</span>
+          <span class="k">schema:</span> { <span class="k">type:</span> string, <span class="k">format:</span> uuid }
+          <span class="k">description:</span> 幂等键，24 小时内相同 key 只创建一次
+      <span class="k">requestBody:</span>
+        <span class="k">required:</span> <span class="k">true</span>
+        <span class="k">content:</span>
+          <span class="k">application/json:</span>
+            <span class="k">schema:</span> { <span class="k">$ref:</span> <span class="s">'#/components/schemas/CreateOrderRequest'</span> }
+      <span class="k">responses:</span>
+        <span class="k">'201':</span>
+          <span class="k">description:</span> 创建成功
+          <span class="k">content:</span>
+            <span class="k">application/json:</span>
+              <span class="k">schema:</span> { <span class="k">$ref:</span> <span class="s">'#/components/schemas/Order'</span> }
+        <span class="k">'409':</span>
+          <span class="k">description:</span> 书籍已被锁定或订单状态冲突
+          <span class="k">content:</span>
+            <span class="k">application/json:</span>
+              <span class="k">schema:</span> { <span class="k">$ref:</span> <span class="s">'#/components/schemas/ErrorResponse'</span> }
+        <span class="k">'401':</span> { <span class="k">description:</span> 未登录或登录已失效 }
+<span class="k">components:</span>
+  <span class="k">schemas:</span>
+    <span class="k">CreateOrderRequest:</span>
+      <span class="k">type:</span> object
+      <span class="k">required:</span> [bookId, handoverMethod]
+      <span class="k">properties:</span>
+        bookId:
+          <span class="k">type:</span> integer
+          <span class="k">format:</span> int64
+        handoverMethod:
+          <span class="k">type:</span> string
+          <span class="k">enum:</span> [LIBRARY_WEST, DORM_LOBBY, COURIER]
+        remark:
+          <span class="k">type:</span> string
+          <span class="k">maxLength:</span> 200
+    <span class="k">Order:</span>
+      <span class="k">type:</span> object
+      <span class="k">required:</span> [orderNo, status, totalAmount, items]
+      <span class="k">properties:</span>
+        orderNo:      { <span class="k">type:</span> string }
+        status:       { <span class="k">type:</span> string, <span class="k">enum:</span> [CREATED, PAID, SHIPPED, COMPLETED, CANCELLED, REFUNDING, REFUNDED, CLOSED] }
+        totalAmount:  { <span class="k">type:</span> number, <span class="k">format:</span> double }
+        expiresAt:    { <span class="k">type:</span> string, <span class="k">format:</span> date-time }
+        items:
+          <span class="k">type:</span> array
+          <span class="k">items:</span> { <span class="k">$ref:</span> <span class="s">'#/components/schemas/OrderItem'</span> }
+    <span class="k">OrderItem:</span>
+      <span class="k">type:</span> object
+      <span class="k">properties:</span>
+        bookId:   { <span class="k">type:</span> integer, <span class="k">format:</span> int64 }
+        title:    { <span class="k">type:</span> string }
+        unitPrice: { <span class="k">type:</span> number }
+    <span class="k">ErrorResponse:</span>
+      <span class="k">type:</span> object
+      <span class="k">required:</span> [code, message]
+      <span class="k">properties:</span>
+        code:    { <span class="k">type:</span> string }
+        message: { <span class="k">type:</span> string }
+        traceId: { <span class="k">type:</span> string }</code></pre>
+
+  <div class="card plain">
+    <p class="card-title"><span class="tag">注意</span>订单状态机的枚举值，出现在 OpenAPI 的 <code>Order.status</code> 里。</p>
+    <p>这不是巧合——<strong>状态机的状态集合就是 API 的契约一部分</strong>。前端拿到 <code>status=PAID</code> 就显示「申请退款」按钮，靠的是两边共用同一份枚举定义。第 7 章的一致性核对中，这一条会被专门检查。</p>
+  </div>
+
+  <h3>6.6 兼容性规则（团队协作的底线）</h3>
+  <div class="tbl-scroll">
+  <table>
+    <thead><tr><th>改动</th><th>兼容性</th><th>说明</th></tr></thead>
+    <tbody>
+      <tr><td>新增可选字段</td><td>✅ 安全</td><td>但老客户端要能容忍未知字段（多数语言默认忽略）</td></tr>
+      <tr><td>新增枚举值</td><td>⚠️ 有风险</td><td>老客户端遇到未知值可能崩——前端要用兜底分支</td></tr>
+      <tr><td>新增接口</td><td>✅ 安全</td><td>—</td></tr>
+      <tr><td>删除字段 / 改字段名</td><td>❌ 破坏性</td><td>必须等所有调用方迁移完，且要保留一个版本周期</td></tr>
+      <tr><td>改字段类型</td><td>❌ 破坏性</td><td>哪怕 int → int64 也可能溢出</td></tr>
+      <tr><td>改字段语义（名字不变含义变）</td><td>❌ 最危险</td><td>编译通过、测试通过、数据全错——所以字段名要能表达语义</td></tr>
+      <tr><td>新增必填字段</td><td>❌ 破坏性</td><td>老客户端没传 → 直接 400</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p><strong>版本化策略</strong>三选一：</p>
+  <ul>
+    <li><strong>URL 版本</strong>：<code>/v1/orders</code>、<code>/v2/orders</code>。直观、易灰度，但 URL 里多个 v 略丑。</li>
+    <li><strong>Header 版本</strong>：<code>Accept: application/vnd.bookrelay.v2+json</code>。URL 干净，但调试和文档门槛高。</li>
+    <li><strong>字段版本</strong>：响应里带 <code>version</code> 字段，同一接口同时返回新旧字段。适合加字段类演进。</li>
+  </ul>
+  <p>学生项目推荐<strong>URL 版本</strong>：简单、网关能按路径路由、文档好写。</p>
+
+  <h3>6.7 契约怎么被真正执行</h3>
+  <div class="grid2">
+    <div class="mini"><h5>契约即代码</h5><p>OpenAPI 文件进仓库；前端类型、后端 DTO、Mock 数据都从它生成。<strong>改契约 → 重新生成 → 编译不过就说明有人没跟上</strong>。</p></div>
+    <div class="mini"><h5>Mock 先行</h5><p>后端还没写完，前端用 Mock Server 按 OpenAPI 造数据。<strong>前后端可以真正并行</strong>，不用等接口。</p></div>
+    <div class="mini"><h5>契约测试</h5><p>CI 里跑「响应是否符合 OpenAPI 描述」的测试，防止实现悄悄跑偏。</p></div>
+    <div class="mini"><h5>消费者驱动契约</h5><p>下游（前端）声明「我需要哪些字段」，上游 CI 里验证自己是否满足（Pact 等工具）。</p></div>
+  </div>
+
+  <div class="ai">
+    <p class="h">AI 在 API 设计阶段的用法</p>
+    <p><strong>用法一（生成契约草稿）：</strong>把功能模块表 + 状态机给 AI：「为订单模块设计 REST 接口清单，包含路径、方法、请求字段、响应字段、错误码、幂等要求、鉴权要求。」它能帮你穷举接口，然后你删改。</p>
+    <p><strong>用法二（把契约翻译成代码）：</strong>FastAPI 里直接写类型注解，框架自动生成 OpenAPI；或者用 <code>datamodel-code-generator</code> 从 OpenAPI 生成 TS 类型 / Java DTO / Mock 数据。<strong>这条链路是 AI 时代最高杠杆的用法</strong>——契约是唯一事实源，其余全部自动派生。</p>
+    <p><strong>用法三（审接口设计）：</strong>「请扮演 API 设计评审，逐个接口检查：资源命名是否规范、状态码是否用对、是否缺分页、是否缺错误码、是否有幂等风险、是否泄露敏感字段、字段命名是否一致。」</p>
+    <p><strong>用法四（写 SDK / 联调代码）：</strong>契约定稿后，让 AI 根据 OpenAPI 生成调用示例、前端 API 封装、Mock 数据、契约测试用例。</p>
+    <p><strong>风险提示：</strong>AI 生成的接口常常「看起来很全」但缺业务约束（比如不知道「订单 30 分钟未支付自动取消」这件事）。<strong>约束只能来自你的设计文档</strong>——这正是前五章存在的意义。</p>
+  </div>
+
+  <details>
+    <summary>动手任务 6-A：为书接力写一份真实的 OpenAPI（60 分钟）</summary>
+    <div class="d-body">
+      <ol>
+        <li>选 6 个接口：创建订单、查询订单列表、查询订单详情、取消订单、申请退款、发布书籍。</li>
+        <li>为每个接口写：路径、方法、鉴权、请求字段（含校验规则）、成功响应、<strong>至少 2 个错误响应</strong>。</li>
+        <li>用 <code>components/schemas</code> 复用公共结构（订单、错误、分页）。</li>
+        <li>统一错误码表：至少列 10 个错误码，写清触发条件和前端应对方式。</li>
+        <li>标出哪些接口需要幂等键，哪些是幂等的。</li>
+        <li>把文件放进 <code>docs/api/openapi.yaml</code>，并用它生成一份 Mock 数据。</li>
+      </ol>
+      <p style="margin-top:12px"><strong>自检：</strong>把这份 OpenAPI 交给一个没参与设计的同学，让他说出「订单从下单到完成会经历哪些接口调用」。如果他数出来的接口数和你设计的流程对不上，说明漏了。</p>
+    </div>
+  </details>
+</section>
+
+<!-- ============ 第 7 章 ============ -->
+<section class="chapter" id="ch7">
+  <div class="chapter-head">
+    <span class="chapter-no">07</span>
+    <h2>跨设计产物一致性核对与设计评审</h2>
+    <p class="sub">解决一个问题：八份设计产物之间，有没有互相打架的地方？</p>
+  </div>
+
+  <div class="card">
+    <p class="card-title"><span class="tag">一句话</span>一致性核对＝把八份产物放在一起做<strong>交叉比对</strong>；设计评审＝用一双专业的眼睛和一套流程，把比对结果变成有结论、有责任人、有期限的行动项。</p>
+    <p>这是整个方法论里<strong>投入产出比最高</strong>的一步。它不需要任何新工具，只需要一张表格和一次认真的会。但绝大多数团队跳过它，然后在上线前一周疯狂返工。</p>
+  </div>
+
+  <h3>7.1 一致性问题的真实样貌</h3>
+  <p>这些不是编出来的段子，而是设计阶段最高频的漏检项：</p>
+  <div class="tbl-scroll">
+  <table>
+    <thead><tr><th>#</th><th>症状</th><th>后果</th><th>发现阶段</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>功能模块里有「退款申请」，但 API 清单里没有退款接口</td><td>前端做不了，开发互相甩锅</td><td>联调期</td></tr>
+      <tr><td>2</td><td>状态机有「退款中」状态，但原型里没有这一页的界面</td><td>用户到了这个状态不知道该干嘛</td><td>测试期</td></tr>
+      <tr><td>3</td><td>ER 图里有 <code>books.isbn</code> 字段，API 响应里没有</td><td>列表页要显示 ISBN，白屏</td><td>联调期</td></tr>
+      <tr><td>4</td><td>架构图里只有 MySQL，没画 Redis，但代码里用了缓存</td><td>新同学部署时忘了装 Redis</td><td>部署期</td></tr>
+      <tr><td>5</td><td>订单状态机的「已关闭」状态，数据库 ENUM 里没有</td><td>定时任务一跑就报数据截断</td><td>上线后</td></tr>
+      <tr><td>6</td><td>原型上有「举报」按钮，但没有举报相关的模块和表</td><td>点了没反应，或数据无处存</td><td>测试期</td></tr>
+      <tr><td>7</td><td>错误码在三个模块里各写了一套，含义冲突</td><td>前端按错误码分支全乱</td><td>联调期</td></tr>
+      <tr><td>8</td><td>第 4 章说并发 200，但第 5 章的库存方案是「先查再写」，没有锁</td><td>超卖</td><td>压测期</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p>注意第 5、8 条：它们不是「文档写漏了」，而是<strong>设计本身有洞</strong>。这说明一致性核对的价值不止于「查漏」，还要能发现<strong>设计层面的矛盾</strong>。</p>
+
+  <h3>7.2 一致性核对矩阵（可直接打印使用）</h3>
+  <p>把八份产物两两交叉，总共就是下面 10 类核对项。<strong>每一行都要有结论</strong>：一致 / 不一致（写清楚谁改）/ 不适用（写清理由）。</p>
+  <div class="tbl-scroll">
+  <table>
+    <thead><tr><th>#</th><th>核对项</th><th>怎么查（操作方法）</th><th>不一致的表现</th></tr></thead>
+    <tbody>
+      <tr><td>C1</td><td>需求 → 功能模块</td><td>把需求里的功能点逐条打勾，找出无人认领的</td><td>需求里的功能没落到任何模块</td></tr>
+      <tr><td>C2</td><td>功能模块 → 业务流程</td><td>每个模块的核心功能点是否都在流程里有对应动作</td><td>模块有功能但流程走不到</td></tr>
+      <tr><td>C3</td><td>业务流程 → 状态机</td><td>流程中每个「对象的阶段」是否都在状态机里</td><td>订单有阶段但状态机没这个状态</td></tr>
+      <tr><td>C4</td><td>状态机 → UI 原型</td><td>每个状态是否有对应页面；每个出口事件是否有对应按钮</td><td>状态存在但界面无入口</td></tr>
+      <tr><td>C5</td><td>功能模块 → API</td><td>模块的每个对外能力是否有对应接口</td><td>模块说要提供能力但没接口</td></tr>
+      <tr><td>C6</td><td>API ↔ 数据模型</td><td>逐接口比对：请求字段、响应字段 ↔ 表字段（读写双向）</td><td>接口要返回的字段表里没有</td></tr>
+      <tr><td>C7</td><td>数据模型 → 架构</td><td>每张表/每个缓存是否在架构图里有对应的存储</td><td>用了缓存但架构没画</td></tr>
+      <tr><td>C8</td><td>原型 → API</td><td>每个页面上显示的每个字段，是否都有接口能提供</td><td>页面要显示 ISBN，接口没返回</td></tr>
+      <tr><td>C9</td><td>状态机 ↔ 数据模型</td><td>状态机里的每个状态值是否在表字段的枚举里</td><td>枚举缺值，定时任务报错</td></tr>
+      <tr><td>C10</td><td>全局一致性</td><td>错误码表、权限规则、命名规范在所有产物中是否一致</td><td>同一错误码两个含义</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h4>怎么把核对做实（三个技巧）</h4>
+  <ol>
+    <li><strong>用机器做能机器做的。</strong>写个小脚本，从 OpenAPI 里抽出所有字段名，和 DDL 里的列名做集合差集——差集里出现的名字就是待查项。三十秒的事，别靠肉眼。</li>
+    <li><strong>用「反向」查一遍。</strong>正向查「每个功能都有接口了吗」，反向查「每个接口都对应哪个功能需求」。正反向结果不一致的地方，通常是设计冗余或遗漏。</li>
+    <li><strong>拉一个不熟悉项目的人来问。</strong>「这个设计要怎么实现退款？」让对方口头描述一遍流程。他卡住的地方，就是设计没讲清楚的地方。这招叫「新人走查」，对 UI 和 API 尤其有效。</li>
+  </ol>
+
+  <pre><code><span class="c"># 一致性核对辅助脚本（示意）：比对 API 响应字段与数据库列名</span>
+<span class="k">import</span> yaml, re
+
+api = yaml.safe_load(open(<span class="s">"docs/api/openapi.yaml"</span>, encoding=<span class="s">"utf-8"</span>))
+ddl = open(<span class="s">"docs/db/schema.sql"</span>, encoding=<span class="s">"utf-8"</span>).read()
+
+<span class="c"># 粗略抽取 DDL 中的列名</span>
+columns = set(re.findall(<span class="s">r"^\s{2,4}(\w+)\s+(?:BIGINT|VARCHAR|CHAR|INT|DECIMAL|DATETIME|ENUM|TEXT)"</span>,
+                          ddl, re.MULTILINE))
+
+<span class="c"># 抽取所有响应 schema 的属性名</span>
+props = set()
+<span class="k">for</span> name, schema <span class="k">in</span> api[<span class="s">"components"</span>][<span class="s">"schemas"</span>].items():
+    props |= set(schema.get(<span class="s">"properties"</span>, {}).keys())
+
+missing = sorted(props - columns)
+<span class="k">if</span> missing:
+    print(<span class="s">"[C6] API 响应里出现但数据库没有的字段：</span>"<span class="s">)
+    <span class="k">for</span> m <span class="k">in</span> missing:
+        print(<span class="s">"  -"</span>, m)
+<span class="k">else</span>:
+    print(<span class="s">"[C6] OK：响应字段均可在数据模型中找到对应列"</span>)</code></pre>
+
+  <h3>7.3 设计评审：把核对结果变成决策</h3>
+  <p>一致性核对是「你自己查」，设计评审是「大家一起查」。评审的价值在于：<strong>不同角色看同一个东西，关注点不同</strong>。前端看交互，后端看边界，测试看可测性，架构师看耦合。</p>
+
+  <h4>评审会的正确流程（90 分钟）</h4>
+  <ol class="steps">
+    <li><div class="st-t">会前：材料先行（提前 2 天发出）</div><div class="st-d">设计文档、评审范围说明、<strong>本次要评审的开放问题列表</strong>、一致性核对矩阵结果。评审不是让所有人从头读文档，而是让作者先说清「我有 3 个拿不准的点，请大家帮我定」。</div></li>
+    <li><div class="st-t">会中：作者讲解 + 提问 + 记录</div><div class="st-d">限时 20 分钟讲设计，40 分钟提问，10 分钟整理结论。指定一名<strong>记录人</strong>，只记「问题 + 结论 + 责任人 + 期限」，不记闲话。</div></li>
+    <li><div class="st-t">会中：按检查表逐项过</div><div class="st-d">用固定的检查表（见 7.4）逐项过，避免「大家都觉得挺好的」然后散会。</div></li>
+    <li><div class="st-t">会后：输出评审纪要与行动项</div><div class="st-d">纪要 = 结论 + 问题清单 + 行动项 + 遗留决策。行动项必须有<strong>责任人和截止时间</strong>，否则等于没记。</div></li>
+    <li><div class="st-t">会后：问题闭环</div><div class="st-d">每个行动项完成后标记关闭；重新设计受影响的产物；必要时<strong>重新评审</strong>（只针对变更部分）。</div></li>
+  </ol>
+
+  <h4>缺陷分级：避免「所有问题都是致命问题」</h4>
+  <div class="tbl-scroll">
+  <table>
+    <thead><tr><th>级别</th><th>定义</th><th>处理</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Blocker</strong></td><td>设计存在逻辑矛盾或无法实现，不改就做不下去</td><td>必须改，评审不通过</td></tr>
+      <tr><td><strong>Major</strong></td><td>会显著增加开发量或引入高风险，但有绕行方案</td><td>本次评审必须给出方案</td></tr>
+      <tr><td><strong>Minor</strong></td><td>命名、表述、细节不一致</td><td>记录，择机修</td></tr>
+      <tr><td><strong>Suggestion</strong></td><td>优化建议，不影响正确性</td><td>作者自行决定</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3>7.4 设计评审检查表</h3>
+  <div class="grid2">
+    <div class="mini"><h5>功能与流程</h5><ul><li>每个需求都有归属模块？</li><li>主流程 + 异常分支都画了？</li><li>状态机无非法转移、无遗漏出口？</li><li>状态命名一致（同一状态不同章节叫不同名）？</li></ul></div>
+    <div class="mini"><h5>数据与接口</h5><ul><li>ER 图与 DDL 一致？</li><li>多对多都拆开了？</li><li>快照字段都标注了？</li><li>OpenAPI 覆盖所有模块能力？</li><li>错误码统一且有文档？</li></ul></div>
+    <div class="mini"><h5>架构与实现</h5><ul><li>分层依赖方向正确？</li><li>有模块依赖环？</li><li>并发/一致性方案与质量目标匹配？</li><li>技术选型有 ADR 支撑？</li></ul></div>
+    <div class="mini"><h5>体验与可测性</h5><ul><li>每个状态在 UI 上都有出口？</li><li>错误提示给出下一步？</li><li>空态/加载态/失败态都设计了？</li><li>每条业务规则能写出测试用例？</li></ul></div>
+  </div>
+
+  <h3>7.5 实战：找出案例里埋的三个问题</h3>
+  <p>下面这份「设计片段」来自一个真实的课程项目。它看起来很完整，但有三个不一致。试试找出来。</p>
+  <div class="card plain">
+    <p class="card-title"><span class="tag">设计片段</span></p>
+    <p><strong>功能模块表（摘录）</strong>：① 用户与账号　② 书籍管理　③ 订单管理　④ 支付　⑤ 消息通知　⑥ <strong>数据统计</strong></p>
+    <p><strong>状态机（摘录）</strong>：订单 = 待支付 → 已支付 → 待交接 → 已完成 / 已取消。<em>（无退款相关状态）</em></p>
+    <p><strong>数据库 DDL（摘录）</strong>：<code>orders.status ENUM('CREATED','PAID','SHIPPED','COMPLETED','CANCELLED')</code>；表中<strong>无 refund 相关表</strong>。</p>
+    <p><strong>OpenAPI（摘录）</strong>：<code>POST /orders</code>、<code>GET /orders</code>、<code>GET /orders/{id}</code>、<code>POST /orders/{id}/cancel</code>、<code>POST /payments</code>。<em>（无退款接口）</em></p>
+    <p><strong>原型</strong>：订单详情页有「申请退款」按钮。</p>
+    <p><strong>架构图</strong>：应用层有「订单用例 / 书籍用例 / 支付用例 / 通知用例 / 统计用例」。</p>
+  </div>
+
+  <details>
+    <summary>点击查看答案（三个不一致）</summary>
+    <div class="d-body">
+      <ol>
+        <li><strong>C5/C6 不一致（跨模块）：</strong>功能模块表和架构图里有「数据统计」，但 API 清单里<strong>没有任何统计接口</strong>，也没有对应的表设计。<br>→ 影响：前端做不了数据看板；开发要现设计。<br>→ 动作：要么补接口与表，要么把「数据统计」从本期范围移出并标注为「后续迭代」。</li>
+        <li><strong>C4 不一致（状态 ↔ UI）：</strong>原型上有「申请退款」按钮，但状态机<strong>没有「退款中」状态</strong>，数据库 ENUM 也没有对应值，API 没有退款接口。<br>→ 影响：按钮点了没接口；真要走退款流程，状态无处落。<br>→ 动作：要么补齐「退款中 → 已退款/已驳回」的状态、枚举、接口、表；要么本期不做退款（同时把按钮去掉）。<strong>三处必须一起改，只改一处就是新的不一致。</strong></li>
+        <li><strong>C1 不一致（需求 ↔ 模块）：</strong>模块表列了「消息通知」，但 API 清单中<strong>没有任何通知查询接口</strong>，原型也没有消息中心页面。<br>→ 影响：用户在订单状态变化后收不到提示，或没有地方查看历史通知。<br>→ 动作：补 <code>GET /notifications</code> + 消息表 + 消息中心页面；或明确「本期只用系统推送，不做站内信」。</li>
+      </ol>
+      <p style="margin-top:12px"><strong>规律：</strong>第 2 条是最典型的——<strong>一个业务决策（要不要支持退款）横跨了 4 份产物</strong>，任何一处漏改都会产生不一致。所以核对不是逐份文档看，而是<strong>沿着一条业务线索横切所有产物</strong>。</p>
+    </div>
+  </details>
+
+  <div class="ai">
+    <p class="h">用 AI 做一致性核对：它擅长穷举，但不擅长判断</p>
+    <p><strong>正确用法：</strong>把多份产物（模块表、状态机、DDL、OpenAPI、原型说明）一起喂给 AI，让它按你给的 C1–C10 清单逐项比对，输出「可能的不一致点」列表，然后<strong>你去核实</strong>。</p>
+    <pre><code>下面是我的 5 份设计产物：功能模块表、订单状态机、数据库 DDL、OpenAPI、原型页面说明。
+请按以下 10 类核对项做交叉比对，找出可能的不一致：
+C1 需求↔模块　C2 模块↔流程　C3 流程↔状态机　C4 状态机↔UI　C5 模块↔API
+C6 API↔数据模型　C7 数据模型↔架构　C8 原型↔API　C9 状态机↔枚举　C10 全局规范
+
+输出格式：核对项编号 | 涉及的两份产物 | 描述 | 建议动作 | 严重度
+要求：
+- 只输出你能在给出的材料中找到文本依据的不一致，不要脑补
+- 不确定的标为「待人工确认」
+- 不要修改我的任何产物
+【粘贴 5 份产物】</code></pre>
+    <p><strong>价值所在：</strong>人类做这类交叉比对最容易疲劳和漏项——第 8 份文件就开始走神了。AI 不会。但<strong>AI 会误报</strong>（它可能没看懂你的隐含约定），也<strong>会漏报</strong>（它读不到你脑子里的业务规则）。所以流程是：<strong>AI 扫，人核</strong>。</p>
+    <p><strong>更狠的用法：</strong>让 AI 扮演「三个月后接手的同事」，只给你看这些产物，问它：「如果让你来实现退款功能，你会卡在哪里？」它卡住的地方，通常就是设计没写清楚的地方。</p>
+  </div>
+
+  <details>
+    <summary>动手任务 7-A：给自己做一次真实的一致性核对（45 分钟）</summary>
+    <div class="d-body">
+      <ol>
+        <li>把你已有的设计产物（哪怕只是模块表 + 状态机 + 几条接口）列成清单。</li>
+        <li>打印或抄下 C1–C10 核对矩阵。</li>
+        <li>逐项过，<strong>每项必须写结论</strong>：一致 / 不一致 / 不适用（写理由）。</li>
+        <li>对每条「不一致」，写清楚：<strong>改哪份产物、改成什么、由谁改、什么时候改</strong>。</li>
+        <li>按严重度排序，先处理 Blocker。</li>
+      </ol>
+      <p style="margin-top:12px"><strong>目标</strong>：至少找出 5 个不一致点。你会发现，几乎每个项目第一次做这件事都能找出 5 个以上。</p>
+    </div>
+  </details>
+</section>
+
+<!-- ============ 第 8 章 ============ -->
+<section class="chapter" id="ch8">
+  <div class="chapter-head">
+    <span class="chapter-no">08</span>
+    <h2>整合：技术设计文档（TDD）</h2>
+    <p class="sub">把前面七份产物，装进一份别人能读懂、你能被追责的文档里。</p>
+  </div>
+
+  <div class="card">
+    <p class="card-title"><span class="tag">一句话</span>技术设计文档＝把八项设计产出整合成一份<strong>自洽、可评审、可施工、可追溯</strong>的单一文件（Single Source of Truth）。</p>
+    <p>整合不是「把图复制粘贴进去」。整合是做三件事：<strong>补齐断点</strong>（各章之间衔接不上的地方）、<strong>消解矛盾</strong>（不同章节说法打架）、<strong>给出结论</strong>（每一节都要有一句「所以我们决定这样」）。</p>
+  </div>
+
+  <h3>8.1 TDD 与其它文档的区别</h3>
+  <div class="tbl-scroll">
+  <table>
+    <thead><tr><th>文档</th><th>回答什么</th><th>读者</th><th>生命周期</th></tr></thead>
+    <tbody>
+      <tr><td>需求文档 / PRD</td><td>要做什么，为谁做</td><td>业务方、产品、开发</td><td>需求评审后基本冻结</td></tr>
+      <tr><td><strong>技术设计文档</strong></td><td><strong>怎么造，为什么这么造</strong></td><td>开发、测试、架构师、<strong>未来的你</strong></td><td>设计评审后冻结，改动走变更流程</td></tr>
+      <tr><td>详细设计</td><td>这段代码怎么写</td><td>具体开发者</td><td>随代码演进</td></tr>
+      <tr><td>接口文档</td><td>调用方怎么用</td><td>调用方</td><td>随契约演进（但 TDD 里必须有引用）</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3>8.2 技术设计文档目录模板</h3>
+  <div class="card plain">
+    <p class="card-title"><span class="tag">可直接套用</span></p>
+    <div class="wire" style="font-family:var(--f-body); white-space:normal; line-height:2">
+    <b>1. 文档信息</b>　版本号 / 状态（草稿·评审中·已批准）/ 作者 / 评审人 / 最后更新日期<br>
+    <b>2. 概述</b>　　系统要解决什么问题（一段话）、范围边界（本期做什么、不做什么）<br>
+    <b>3. 背景与约束</b>　业务背景、用户规模、团队与工期、技术与预算约束 ← <span style="color:#a53c26">所有后续决策的根</span><br>
+    <b>4. 质量目标</b>　　量化的非功能需求（性能/并发/可用性/一致性/成本）<br>
+    <b>5. 功能模块设计</b>　模块清单 + 职责 + 依赖图 + 优先级<br>
+    <b>6. 业务流程与状态机</b>　主流程、异常分支、订单/书籍状态机、状态转移表<br>
+    <b>7. UI/UX 设计</b>　信息架构、关键页面线框、交互流程、设计规范要点<br>
+    <b>8. 系统架构</b>　　架构图、分层职责、模块依赖、关键时序图<br>
+    <b>9. 技术选型</b>　　选型表 + ADR 摘要（决策与后果）<br>
+    <b>10. 数据模型</b>　概念模型、ER 图、逻辑模式、物理 DDL、索引与迁移策略<br>
+    <b>11. API 与数据契约</b>　接口清单、OpenAPI 引用、错误码表、幂等与版本策略<br>
+    <b>12. 一致性核对与评审结论</b>　核对矩阵结果、未决问题清单<br>
+    <b>13. 测试与验收</b>　从业务规则推导出的验收用例要点<br>
+    <b>14. 风险与待定项</b>　已知风险、开放问题、下一步计划
+    </div>
+  </div>
+
+  <div class="note tip">
+    <span class="h">第 3 节「背景与约束」是整份文档最重要的三页</span>
+    <p>所有架构决策、技术选型、砍需求的讨论，最终都要回到这一节来判对错。<strong>没有约束的设计文档等于没有设计文档</strong>——因为任何方案都可以被辩护成「合理」。写了「3 人团队 / 3 个月 / 零预算」，那么「要不要上微服务」这个问题就有了唯一答案。</p>
+  </div>
+
+  <h3>8.3 写作原则</h3>
+  <div class="grid2">
+    <div class="mini good"><h5>✓ 结论先行</h5><p>每章开头一句话给结论，然后才是论证。读者可能只读每章第一句，你得保证那一句就够用。</p></div>
+    <div class="mini good"><h5>✓ 图 &gt; 表 &gt; 文字</h5><p>一张结构清楚的图胜过三段描述。但<strong>每张图后面必须跟一句话结论</strong>——图本身不表达观点，读者会各看各的。</p></div>
+    <div class="mini good"><h5>✓ 标注待定项</h5><p>把「还没想清楚」显式标出来（<code>【待定】</code>），而不是含混过去。假装的确定性比诚实的未知更危险。</p></div>
+    <div class="mini good"><h5>✓ 可追溯</h5><p>每个设计决策标注它来自哪条需求/哪个约束（用 <code>[REQ-03]</code> 这类编号）。这在需求变更时价值巨大。</p></div>
+    <div class="mini bad"><h5>✗ 写成散文</h5><p>大段文字描述系统，读者读三页也抓不住主干。</p></div>
+    <div class="mini bad"><h5>✗ 复制粘贴</h5><p>把 OpenAPI 全文粘进文档而不是引用文件。文档立刻变成没人维护的坟场。</p></div>
+  </div>
+
+  <h3>8.4 摘要段落示例（开篇要能独立成立）</h3>
+  <div class="card plain">
+    <p class="card-title"><span class="tag">2. 概述</span></p>
+    <p><strong>问题</strong>：校园内二手教材流转依赖微信群与闲鱼，教材信息不透明、交易无保障、找不到书是主要痛点。</p>
+    <p><strong>方案</strong>：构建单校范围的二手教材流转平台「书接力」，提供可检索的书籍目录、订单与状态跟踪、线下面交交接码、双方互评与信誉分。</p>
+    <p><strong>范围</strong>：本期覆盖书籍发布与检索、下单支付、线下面交、评价、站内通知、后台审核。<strong>不包含</strong>：跨校交易、快递物流对接、教材预售与团购、支付分账给多个卖家。</p>
+    <p><strong>关键约束</strong>：3 人团队、3 个月工期、月成本 ≤ 50 元、单校峰值 200 并发。</p>
+    <p><strong>核心技术决策</strong>：采用模块化单体架构（Python FastAPI + MySQL + Redis），按 8 个业务模块划分内部边界，以领域事件解耦跨模块通知；库存通过 Redis 分布式锁 + 数据库行锁双重保护防止超卖。</p>
+  </div>
+
+  <h3>8.5 交付物清单（DoD：完成的定义）</h3>
+  <div class="tbl-scroll">
+  <table>
+    <thead><tr><th style="width:26px">✓</th><th>交付物</th><th>格式</th><th>验收标准</th></tr></thead>
+    <tbody>
+      <tr><td>☐</td><td>功能模块说明书</td><td>Markdown 表格</td><td>每个模块有一句话职责、核心功能、不承担的事、优先级、复杂度</td></tr>
+      <tr><td>☐</td><td>模块依赖图</td><td>Mermaid / SVG</td><td>无环；依赖方向与架构分层一致</td></tr>
+      <tr><td>☐</td><td>业务流程说明 + 异常分支清单</td><td>Markdown + 泳道图</td><td>主流程与 ≥10 条异常分支</td></tr>
+      <tr><td>☐</td><td>状态机图 + 状态转移表</td><td>SVG + 表格</td><td>每个对象 ≥8 个状态；含终态与非法转移处理</td></tr>
+      <tr><td>☐</td><td>信息架构 + 关键页面原型</td><td>Figma / Excalidraw / HTML</td><td>≥6 个关键页面；含 loading/empty/error 三态</td></tr>
+      <tr><td>☐</td><td>架构图 + 技术选型表 + ADR</td><td>SVG + 表格 + Markdown</td><td>每个选型有理由与负面后果</td></tr>
+      <tr><td>☐</td><td>ER 图 + DDL 脚本</td><td>SVG + SQL</td><td>DDL 可在空库执行成功；含索引与外键</td></tr>
+      <tr><td>☐</td><td>OpenAPI + 错误码表</td><td>YAML + Markdown</td><td>通过 OpenAPI 校验；可生成 Mock</td></tr>
+      <tr><td>☐</td><td>一致性核对矩阵</td><td>表格</td><td>C1–C10 全部有结论；Blocker 清零</td></tr>
+      <tr><td>☐</td><td>评审纪要 + 行动项</td><td>Markdown</td><td>每条行动项有责任人与期限</td></tr>
+      <tr><td>☐</td><td>技术设计文档</td><td>Markdown / 文档站</td><td>14 节齐全；评审已批准并冻结版本</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3>8.6 文档的维护</h3>
+  <ul>
+    <li><strong>版本号 + 变更记录</strong>：每次改设计记一行（日期 / 改了什么 / 为什么 / 谁改的）。没有变更记录的文档，你无法判断手里这份是不是最新的。</li>
+    <li><strong>状态标记</strong>：草稿 / 评审中 / 已批准 / 已废弃。评审通过后冻结；后续改动走变更流程，不能悄悄改。</li>
+    <li><strong>与代码同仓</strong>：文档和代码放同一个仓库，一起提交、一起 review。文档在别处就一定会腐烂。</li>
+    <li><strong>定期体检</strong>：每两周花 30 分钟核对文档与代码是否还一致——这正是第 7 章那套核对矩阵的日常版本。</li>
+  </ul>
+
+  <div class="ai">
+    <p class="h">AI 在文档整合阶段的用法</p>
+    <p><strong>用法一（搭骨架）：</strong>把上面 14 节模板给它，让它逐节生成「本章要写什么、需要哪些输入材料」的提纲，你往里填内容。</p>
+    <p><strong>用法二（做「读者测试」）：</strong>「请扮演一位刚加入项目、只读这份 TDD 的开发同事，回答：① 新增一个「预约功能」需要改哪几处？② 订单超时未支付是谁负责取消？③ 前端要显示卖家昵称，字段从哪来？④ 想加一个优惠券字段，要动哪些地方？以你查到的文档内容为准，答不出就说你查不到。」<strong>它答不出的地方，就是文档写得不够的地方。</strong>这个方法比人工通读高效得多。</p>
+    <p><strong>用法三（反向生成）：</strong>让 AI 从代码反向生成一份架构说明和接口清单，与手写文档对比，差异处重点检查——通常差异最大的地方，就是当初设计得最含糊的地方。</p>
+    <p><strong>用法四（写变更记录与版本说明）：</strong>设计改了一版，让 AI 基于 git diff 生成「本次设计变更说明」，供评审人快速理解改动。</p>
+    <p><strong>核心心法：</strong>让 AI 当「第一个读者」，而不是当「作者」。它的价值在于以零背景、零耐心、零上下文的方式检验你的设计是否自洽——这恰好是设计文档最大的读者画像。</p>
+  </div>
+
+  <details>
+    <summary>动手任务 8-A：产出你的第一份 TDD 骨架（60 分钟）</summary>
+    <div class="d-body">
+      <ol>
+        <li>按 14 节模板创建 <code>docs/TDD.md</code>。</li>
+        <li>第 1–4 节认真填：版本、概述、<strong>背景与约束（最重要）</strong>、质量目标。</li>
+        <li>第 5–11 节先放你已有的产物并加引用链接，缺的地方标 <code>【待补】</code>。</li>
+        <li>第 12 节填第 7 章的核对矩阵结果。</li>
+        <li>第 13 节：从你的业务规则里挑 8 条，各写一句验收标准（Given-When-Then 格式最好）。</li>
+        <li>第 14 节：写下你当前最没把握的 3 个开放问题。</li>
+      </ol>
+      <p style="margin-top:12px"><strong>验收</strong>：把第 3 节（背景与约束）单独发给一个同学，问他「你觉得这个项目该用什么架构」。如果他的答案和你写的一致，说明你的约束写清楚了——如果他建议上微服务，说明你漏写了团队规模。</p>
+    </div>
+  </details>
+</section>
+
+<!-- ============ 第 9 章 ============ -->
+<section class="chapter" id="ch9">
+  <div class="chapter-head">
+    <span class="chapter-no">09</span>
+    <h2>贯穿实战：书接力完整走一遍</h2>
+    <p class="sub">八步串成一条流水线，看清每一步的输入与输出如何咬合。</p>
+  </div>
+
+  <div class="card">
+    <p class="card-title"><span class="tag">怎么用这一章</span></p>
+    <p>前八章是分开讲的，这一章是<strong>连着走</strong>。每一步都标出「输入是什么 / 做什么 / 产出什么 / 交给下一步什么」。如果你时间有限，只做这一章的实战也值——因为设计的价值在于串起来，而不是每一块都完美。</p>
+  </div>
+
+  <h3>9.1 全流程作战图</h3>
+  <div class="tbl-scroll">
+  <table>
+    <thead><tr><th>步骤</th><th>输入</th><th>关键动作</th><th>产出</th><th>交给下一步</th></tr></thead>
+    <tbody>
+      <tr><td>① 需求与约束</td><td>用户访谈、课程任务书</td><td>写清问题、范围、<strong>团队与工期、预算</strong></td><td>一句话需求 + 约束清单</td><td>一切</td></tr>
+      <tr><td>② 功能模块</td><td>①</td><td>撒网列功能 → 聚类 → 写职责 → 划边界 → 排优先级</td><td>模块说明书 + 依赖图</td><td>流程、页面、接口</td></tr>
+      <tr><td>③ 流程与状态机</td><td>②</td><td>画泳道图 → 补异常分支 → 抽对象 → 画状态机 + 转移表</td><td>流程图 + 2 个状态机</td><td>页面、字段、枚举</td></tr>
+      <tr><td>④ UI/UX</td><td>②③</td><td>列页面 → 关键页面线框 → 串交互 → 补三态</td><td>信息架构 + 6 个线框</td><td>接口字段、按钮</td></tr>
+      <tr><td>⑤ 架构与选型</td><td>① + ③④</td><td>定质量目标 → 拆数据流 → 选风格 → 打分选型 → 写 ADR</td><td>架构图 + 选型表 + ADR</td><td>存储、中间件</td></tr>
+      <tr><td>⑥ 数据建模</td><td>③</td><td>抽实体 → 定关系 → 规范化为逻辑模式 → 落物理 DDL + 索引</td><td>ER 图 + DDL</td><td>接口字段、枚举</td></tr>
+      <tr><td>⑦ API 契约</td><td>②④⑥</td><td>定资源与路径 → 状态码 → 错误码统一 → 幂等 → 写 OpenAPI</td><td>openapi.yaml + 错误码表</td><td>前后端并行开发</td></tr>
+      <tr><td>⑧ 核对与评审</td><td>全部</td><td>跑 C1–C10 矩阵 → 开评审会 → 出纪要行动项 → 回改</td><td>核对矩阵 + 评审纪要</td><td>文档定稿</td></tr>
+      <tr><td>⑨ 整合成 TDD</td><td>全部</td><td>补断点 → 消矛盾 → 每节写结论 → 编号追溯</td><td>docs/TDD.md</td><td>开发、测试</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3>9.2 一步步走（浓缩版）</h3>
+
+  <div class="card plain">
+    <p class="card-title"><span class="tag">① 需求与约束</span></p>
+    <p><strong>需求</strong>：让校园闲置教材能流转起来，减少浪费，同时让买家放心。</p>
+    <p><strong>约束</strong>（这段决定了后面所有技术选择）：3 人 / 3 个月 / 零预算 / 单校 2 万人 / 峰值 200 并发 / 要求手机端可用。</p>
+  </div>
+
+  <div class="card plain">
+    <p class="card-title"><span class="tag">② 功能模块</span></p>
+    <p>8 个模块（见 1.5 表格）。关键判断：把「数据统计」降级为「后台运营」的一个子功能而不是独立模块；把「交接与物流」独立出来，因为它有独立的业务规则（交接码、交接点）和独立责任人。</p>
+  </div>
+
+  <div class="card plain">
+    <p class="card-title"><span class="tag">③ 流程与状态机</span></p>
+    <p>主流程 6 步（见 2.1），异常分支 14 条。订单状态机 8 状态 9 转移（见图 2-1），书籍状态机 6 状态（草稿/审核中/在售/锁定/已售/已下架）。</p>
+    <p><strong>这一步的输出直接决定了后面两步</strong>：订单的 8 个状态 → 数据库 ENUM 枚举值 → API 里 <code>status</code> 字段的枚举 → UI 上四种状态页的按钮。</p>
+  </div>
+
+  <div class="card plain">
+    <p class="card-title"><span class="tag">④ UI/UX</span></p>
+    <p>10 个页面（见 3.3），重点画了 4 个订单状态页（见 3.5）。信息架构：首页 → 分类 → 搜索结果 → 详情 → 下单 → 支付 → 订单列表 → 订单详情；以及 顶部导航统一切换「买 / 卖 / 消息 / 我的」。</p>
+  </div>
+
+  <div class="card plain">
+    <p class="card-title"><span class="tag">⑤ 架构与选型</span></p>
+    <p>模块化单体 + 5 层（见图 4-1）。选型：Vue3 + FastAPI + MySQL + Redis + 对象存储 + Docker Compose。7 条 ADR，其中 ADR-002 明确记录「不上微服务」及其后果。</p>
+  </div>
+
+  <div class="card plain">
+    <p class="card-title"><span class="tag">⑥ 数据建模</span></p>
+    <p>8 张核心表 + 2 张扩展表（payments、refunds）。ER 图见图 6-1。三个刻意的快照字段：<code>order_items.unit_price</code>、<code>order_items.condition</code>、订单里的 <code>buyer_nickname_snapshot</code>。</p>
+  </div>
+
+  <div class="card plain">
+    <p class="card-title"><span class="tag">⑦ API 契约</span></p>
+    <p>18 个接口。错误码 14 个（如 <code>ORDER_STATE_CONFLICT</code>、<code>BOOK_ALREADY_LOCKED</code>、<code>IDEMPOTENCY_KEY_REUSED</code>）。三个接口需要幂等键：创建订单、申请退款、确认收货。</p>
+  </div>
+
+  <div class="card plain">
+    <p class="card-title"><span class="tag">⑧ 核对与评审</span></p>
+    <p>C1–C10 全跑一遍，发现 7 处不一致，其中 2 处 Blocker：
+    <br>· <strong>Blocker 1</strong>：状态机的「退款中」在 DB ENUM 里漏了 → 补枚举 + 迁移脚本。
+    <br>· <strong>Blocker 2</strong>：架构图没画 Redis，但库存锁方案依赖它 → 补架构图并把 Redis 列为必需依赖。
+    <br>其余 5 处为 Minor/Minor/Minor/Minor/Minor → 统一命名、补空态文案、补字段注释。</p>
+  </div>
+
+  <div class="card plain">
+    <p class="card-title"><span class="tag">⑨ TDD 定稿</span></p>
+    <p>14 节、约 30 页。版本 v1.0.0，状态「已批准」。变更记录 3 行。开放问题从 5 个收敛到 1 个（「支付渠道选校内卡还是第三方，待与社团确认」）。</p>
+  </div>
+
+  <h3>9.3 时间分配建议（3 人 × 3 个月）</h3>
+  <div class="tbl-scroll">
+  <table>
+    <thead><tr><th>阶段</th><th>时长</th><th>产出</th><th>注意</th></tr></thead>
+    <tbody>
+      <tr><td>需求澄清 + 功能模块</td><td>3 天</td><td>模块说明书</td><td>别急着画界面</td></tr>
+      <tr><td>流程 + 状态机</td><td>4 天</td><td>状态机 + 转移表</td><td>回报率最高的一步</td></tr>
+      <tr><td>数据建模</td><td>3 天</td><td>ER + DDL</td><td>DDL 定了就别乱改</td></tr>
+      <tr><td>API 契约</td><td>3 天</td><td>openapi.yaml</td><td>前后端分头开发的开关</td></tr>
+      <tr><td>UI 原型</td><td>5 天</td><td>关键页面线框</td><td>可与上两项并行</td></tr>
+      <tr><td>架构与选型</td><td>2 天</td><td>架构图 + ADR</td><td>约束明确时其实很快</td></tr>
+      <tr><td>一致性核对 + 评审</td><td>2 天</td><td>矩阵 + 纪要</td><td>发现的问题越多越值</td></tr>
+      <tr><td>TDD 整合</td><td>2 天</td><td>TDD v1.0.0</td><td>不要边写代码边补</td></tr>
+      <tr><td><strong>合计</strong></td><td><strong>约 3.5 周</strong></td><td>—</td><td>约占 3 个月的 30%</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p style="font-size:14.5px;color:var(--ink-soft)">注意最后一行：<strong>花 30% 的时间做设计，剩下 70% 写代码，通常比「先写代码再补文档」快得多</strong>——因为你少返工了几轮。</p>
+
+  <details>
+    <summary>动手任务 9-A：完整跑一遍（建议 3–5 天）</summary>
+    <div class="d-body">
+      <p>选一个你自己真正想做的小项目（哪怕是「校园课程表助手」这种），完整跑一遍九步。每一步的产出物都要<strong>真的写出来</strong>，不要在脑子里过一遍就算。</p>
+      <p>跑完之后做一次回顾：</p>
+      <ol>
+        <li>第 8 步的一致性核对，你找出了几处不一致？哪几处是「不做这一步就绝对发现不了」的？</li>
+        <li>有没有哪一步你其实跳过了？跳过的后果是什么？</li>
+        <li>如果让你重新做一次，哪一步会放在最前面？</li>
+      </ol>
+    </div>
+  </details>
+</section>
+
+<!-- ============ 第 10 章 ============ -->
+<section class="chapter" id="ch10">
+  <div class="chapter-head">
+    <span class="chapter-no">10</span>
+    <h2>AI 时代的设计方法论</h2>
+    <p class="sub">代码没人看了，那什么还有人在看？答案就是「设计」，以及「把设计变成 AI 能吃进去的规格」的能力。</p>
+  </div>
+
+  <div class="card">
+    <p class="card-title"><span class="tag">本章主张</span></p>
+    <p>AI 让「产出代码」变得极其廉价，于是两件事同时发生：</p>
+    <p><strong>一，代码本身贬值。</strong>「这个功能怎么实现的」不再值钱，因为十个人可以让模型各写一版。</p>
+    <p><strong>二，「规格」的含金量暴涨。</strong>因为模型的一切产出，上限都由你给它的规格决定。<strong>你给的是「订单要能退款」，模型给你一段演示代码；你给的是带守卫条件、状态转移表、错误码和边界场景的规格，模型给你能上线的实现。</strong></p>
+    <p>所以本课教的八个模块，在 AI 时代不是「过时的流程官僚主义」，而是<strong>最高杠杆的一步</strong>：它把「我知道要什么」变成「AI 也能确切知道要什么」。</p>
+  </div>
+
+  <h3>10.1 价值重估：哪些在贬值，哪些在升值</h3>
+  <div class="tbl-scroll">
+  <table>
+    <thead><tr><th>能力</th><th>AI 时代</th><th>说明</th></tr></thead>
+    <tbody>
+      <tr><td>手写样板代码</td><td>↓↓ 贬值</td><td>CRUD、路由、DAO、组件，模型几秒出且可用</td></tr>
+      <tr><td>记 API 用法</td><td>↓↓ 贬值</td><td>模型记得比你准</td></tr>
+      <tr><td>写文档的「量」</td><td>↓↓ 贬值</td><td>模型能一口气写一万字，但写得越多你越不看</td></tr>
+      <tr><td>把需求问清楚</td><td>↑↑ 升值</td><td>模型会流畅地陪你把模糊需求模糊化，只有你能踩刹车</td></tr>
+      <tr><td>做取舍并承担后果</td><td>↑↑ 升值</td><td>模型给 10 个选项并说各有优劣，拍板与担责是你</td></tr>
+      <tr><td>写出无歧义规格</td><td>↑↑ 升值</td><td>这正是本课八章训练的核心能力</td></tr>
+      <tr><td>判断 AI 产出对不对</td><td>↑↑ 升值</td><td>没有设计能力的人，只能靠「看起来对」</td></tr>
+      <tr><td>发现设计中的矛盾</td><td>↑↑ 升值</td><td>AI 越来越多地生成「局部正确、整体矛盾」的代码</td></tr>
+      <tr><td>建立可验证的质量基线</td><td>↑↑ 升值</td><td>验收标准、契约测试、状态机守卫，都是 AI 跑不偏的缰绳</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3>10.2 AI 改造后的设计流水线</h3>
+  <p>把第 0 章那张图改造一下，就得到了 AI 时代的版本——注意红线变成了双向的：<strong>AI 既在下游替你干活，也会反过来帮你检查上游</strong>。</p>
+  <figure>
+    <svg viewBox="0 0 900 400" role="img" aria-labelledby="aipipe t7">
+      <title id="t7">AI 时代的设计流水线</title>
+      <defs>
+        <marker id="ar8" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#8b8172"/></marker>
+        <marker id="ar9" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#a97c1f"/></marker>
+      </defs>
+      <rect width="900" height="400" fill="#fffdf6"/>
+      <g font-family="Noto Serif SC, serif" text-anchor="middle">
+        <g>
+          <rect x="26" y="30" width="200" height="66" rx="4" fill="#e2ece7" stroke="#2c5a4d" stroke-width="1.6"/>
+          <text x="126" y="56" font-size="15" fill="#22463d">人：定义问题与约束</text>
+          <text x="126" y="78" font-size="11.5" fill="#5d5548">需求 · 范围 · 质量目标</text>
+        </g>
+        <g>
+          <rect x="262" y="30" width="200" height="66" rx="4" fill="#e2ece7" stroke="#2c5a4d" stroke-width="1.6"/>
+          <text x="362" y="56" font-size="15" fill="#22463d">人：设计产物</text>
+          <text x="362" y="78" font-size="11.5" fill="#5d5548">模块 · 状态机 · ER · 契约</text>
+        </g>
+        <g>
+          <rect x="498" y="30" width="200" height="66" rx="4" fill="#f7eed3" stroke="#a97c1f" stroke-width="1.6"/>
+          <text x="598" y="56" font-size="15" fill="#7a5a12">AI：从规格派生实现</text>
+          <text x="598" y="78" font-size="11.5" fill="#5d5548">代码 · 测试 · Mock · 文档</text>
+        </g>
+        <g>
+          <rect x="734" y="30" width="150" height="66" rx="4" fill="#e4ecf4" stroke="#2b4f74" stroke-width="1.6"/>
+          <text x="809" y="56" font-size="15" fill="#2b4f74">CI 验证</text>
+          <text x="809" y="78" font-size="11.5" fill="#5d5548">契约测试 · 状态机测试</text>
+        </g>
+
+        <g>
+          <rect x="262" y="200" width="200" height="66" rx="4" fill="#f6e5df" stroke="#a53c26" stroke-width="1.6"/>
+          <text x="362" y="226" font-size="15" fill="#a53c26">AI：交叉核对与挑刺</text>
+          <text x="362" y="248" font-size="11.5" fill="#5d5548">不一致点 · 缺失事件 · 漏洞</text>
+        </g>
+        <g>
+          <rect x="498" y="200" width="200" height="66" rx="4" fill="#f6e5df" stroke="#a53c26" stroke-width="1.6"/>
+          <text x="598" y="226" font-size="15" fill="#a53c26">AI：对抗式评审</text>
+          <text x="598" y="248" font-size="11.5" fill="#5d5548">扮演挑刺的评审 / 新人</text>
+        </g>
+        <g>
+          <rect x="734" y="200" width="150" height="66" rx="4" fill="#f6e5df" stroke="#a53c26" stroke-width="1.6"/>
+          <text x="809" y="226" font-size="15" fill="#a53c26">人：判断与拍板</text>
+          <text x="809" y="248" font-size="11.5" fill="#5d5548">决定改不改 · 改哪边</text>
+        </g>
+      </g>
+      <g stroke="#8b8172" stroke-width="1.5" fill="none" marker-end="url(#ar8)">
+        <path d="M228 63 L258 63"/>
+        <path d="M464 63 L494 63"/>
+        <path d="M700 63 L730 63"/>
+        <path d="M809 98 L809 130 L362 130 L362 196"/>
+        <path d="M464 233 L494 233"/>
+        <path d="M700 233 L730 233"/>
+        <path d="M809 198 L809 150"/>
+      </g>
+      <g stroke="#a97c1f" stroke-width="1.5" stroke-dasharray="5 4" fill="none" marker-end="url(#ar9)">
+        <path d="M362 198 L362 150 L126 150 L126 100"/>
+        <path d="M262 233 L140 233 L140 100"/>
+        <path d="M598 198 L598 110 L362 110 L362 100"/>
+      </g>
+      <g font-family="Noto Serif SC, serif" font-size="11.5" fill="#8b8172">
+        <text x="470" y="122">CI 失败回传：实现与规格不符</text>
+        <text x="150" y="228">← AI 的挑刺回流到人</text>
+        <text x="420" y="318" font-size="12" fill="#a97c1f">AI 提出的每一条，都必须由人裁决：采纳 / 驳回 / 暂缓</text>
+      </g>
+    </svg>
+    <figcaption>图 10-1　AI 时代的设计流水线。金色虚线是 AI 对上游的反向作用——AI 不只是执行者，还是检查者；但<strong>最终裁决权始终在人</strong>。</figcaption>
+  </figure>
+
+  <h3>10.3 一条铁律：AI 输出的质量上限 = 你输入的精度</h3>
+  <p>这是本章最实用的一句话。给两组对照，看看你给 AI 的输入差在哪：</p>
+  <div class="grid2">
+    <div class="mini bad"><h5>✗ 模糊输入</h5>
+      <p style="font-size:14px">「帮我实现订单模块，支持下单、支付、取消和退款。」</p>
+      <p style="font-size:13.5px;color:var(--ink-soft)">AI 会给你：标准四状态机、通用支付回调、可能带 JWT 校验的 Express/FastAPI 代码。<strong>看起来专业，但</strong>——没有超时取消、没有库存锁、没有 409 冲突、不知道你的交接码、不知道你的表名。</p>
+    </div>
+    <div class="mini good"><h5>✓ 精确输入</h5>
+      <p style="font-size:14px">「按 <code>docs/TDD.md</code> 第 6 章的订单状态机实现。<br>· 8 个状态严格按转移表，非法转移抛 <code>IllegalTransition</code><br>· 待支付 30 分钟超时由定时任务取消<br>· 创建订单需 Idempotency-Key，24h 内 Redis 去重<br>· 库存用 Redis 锁 + DB 行锁双保险<br>· 错误码见 <code>docs/api/errors.md</code>，用 409 表示状态冲突<br>· 表结构见 <code>docs/db/schema.sql</code>，不要改字段名<br>· 每个转移写审计日志并发领域事件<br>先只输出领域层的纯 Python 模块，不要 FastAPI 代码。」</p>
+    </div>
+  </div>
+  <p>两段话都是「让 AI 写订单模块」，但第二段的产出可以直接进代码库，第一段的产出只能进演示。</p>
+
+  <h3>10.4 八章 × AI：逐章对照表</h3>
+  <div class="tbl-scroll">
+  <table>
+    <thead><tr><th>设计环节</th><th>AI 最擅长（让它干）</th><th>AI 不擅长（你必须干）</th><th>本课对应产出</th></tr></thead>
+    <tbody>
+      <tr><td>功能模块</td><td>穷举候选功能、按规则聚类、找职责重叠与遗漏</td><td>判断哪个业务边界符合真实场景</td><td>模块说明书</td></tr>
+      <tr><td>流程与状态机</td><td>枚举遗漏事件与转移、找死锁/资源泄漏、推演边界</td><td>定义什么叫「正常业务规则」</td><td>状态转移表</td></tr>
+      <tr><td>UI/UX</td><td>从模块+状态机生成页面清单与区块草稿、生成组件代码</td><td>判断哪一步是用户真正卡点</td><td>信息架构 + 线框</td></tr>
+      <tr><td>架构与选型</td><td>生成候选与对比、给 ADR 草稿、扮演评审提问</td><td>结合团队/工期/预算拍板</td><td>架构图 + ADR</td></tr>
+      <tr><td>数据建模</td><td>抽实体、查范式问题、生成 DDL、脚本比对字段</td><td>识别哪些字段必须是快照</td><td>ER 图 + DDL</td></tr>
+      <tr><td>API 契约</td><td>生成 OpenAPI、错误码表、前后端类型与 Mock</td><td>定义业务语义与幂等边界</td><td>openapi.yaml</td></tr>
+      <tr><td>一致性核对</td><td>跨产物交叉比对、找矛盾点</td><td>判断哪个是「有意为之的例外」</td><td>核对矩阵</td></tr>
+      <tr><td>文档整合</td><td>补写章节、扮演新读者做答卷</td><td>给出结论与承担取舍</td><td>TDD</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3>10.5 「AI 时代七条设计纪律」</h3>
+  <ol class="steps">
+    <li><div class="st-t">一、先有约束，再问方案</div><div class="st-d">永远先写清楚团队规模、工期、预算、量级。AI 在没有约束时会给你最"先进"的方案，而这正是学生项目最不需要的。</div></li>
+    <li><div class="st-t">二、让机器读得懂你的意图</div><div class="st-d">枚举值、状态名、错误码、字段名保持全仓统一并写进 OpenAPI/枚举文件。AI 对「唯一事实源」的依赖远强于对散落在文档里的描述。</div></li>
+    <li><div class="st-t">三、把规格写成可验证的形式</div><div class="st-d">「状态要正确」没法验证，「CREATED + cancel → CANCELLED 并释放库存锁，且 15 分钟内不可重复释放」可以写成单元测试。规格的可验证性 = AI 产出的可验证性。</div></li>
+    <li><div class="st-t">四、让 AI 做「生成」，你做「验收」</div><div class="st-d">AI 生成的每一项都要有对应的验收方式：接口 → 契约测试；状态机 → 转移表测试；SQL → 索引与执行计划检查。</div></li>
+    <li><div class="st-t">五、把 AI 当第一读者，不当作者</div><div class="st-d">「它能不能看懂 / 它会卡在哪」比「它写得像不像」更能暴露设计缺陷。让 AI 演新同事、演挑刺的评审、演三个月后的自己。</div></li>
+    <li><div class="st-t">六、警惕「看起来专业的错误」</div><div class="st-d">AI 特别擅长生成结构完整但缺少你业务约束的产物：五状态的标准状态机、缺 ENUM 的 DDL、漏幂等键的接口。审查重点永远是「那些只有你知道的事」。</div></li>
+    <li><div class="st-t">七、人保留裁决权与责任</div><div class="st-d">AI 提的每条建议都要人裁决：采纳 / 驳回 / 暂缓，并记录理由。责任永远在签字的人身上。</div></li>
+  </ol>
+
+  <h3>10.6 AI 提示词卡片（打印贴墙）</h3>
+
+  <div class="card plain">
+    <p class="card-title"><span class="tag">卡片 1</span>需求澄清（对抗式追问）</p>
+    <pre><code>你是资深需求分析师。我要做一个「校园二手教材流转平台」。
+请不要直接给我方案，而是连续问我 12 个问题，规则如下：
+· 每个问题必须逼我给出可验证的数字或边界（如"超时是几分钟""最多几本书"）
+· 一次只问一个问题，等我回答后再问下一个
+· 若我的回答含糊（"看情况""以后再说"），指出含糊之处并要求量化
+· 若我漏了角色/异常/边界，主动提示
+开始。</code></pre>
+  </div>
+
+  <div class="card plain">
+    <p class="card-title"><span class="tag">卡片 2</span>状态机完备性检查</p>
+    <pre><code>以下是订单状态机的转移表。请扮演一位处理过 10 万笔订单的风控工程师，逐项检查：
+1) 缺失事件：超时、并发、外部系统失败、纠纷、误操作
+2) 守卫冲突：两条规则的守卫可能同时成立或都不成立
+3) 资源泄漏：每条路径结束时，库存锁/金额/优惠券是否都释放
+4) 终态定义：哪些是终态？是否有可达但无出口的状态
+5) 非法转移：遇到不在表中的转移应该返回什么错误码
+6) 反向路径：每个错误能否被撤销？撤销需要谁批准
+输出表格：问题 | 涉及转移 | 风险 | 建议。无法确定的标注"需业务确认"，不要臆造规则。</code></pre>
+  </div>
+
+  <div class="card plain">
+    <p class="card-title"><span class="tag">卡片 3</span>一致性核对（见 7.4 完整版）</p>
+    <pre><code>下面是我的设计产物清单：需求摘要、功能模块表、状态机、ER/DDL、OpenAPI、原型页面说明。
+请按 C1–C10 做交叉核对，输出：核对项 | 涉及产物 | 不一致描述 | 建议动作 | 严重度。
+要求：
+· 每条不一致必须引用产物中的具体原文片段作为依据
+· 不确定的一律标"待人工确认"，不要脑补
+· 不要修改我的产物
+另外：请扮演"新同学"，只读这份产物，列出你实现「订单超时取消」和「退款」时会卡住的 5 个地方。</code></pre>
+  </div>
+
+  <div class="card plain">
+    <p class="card-title"><span class="tag">卡片 4</span>从设计派生实现（最关键的一张）</p>
+    <pre><code>请严格依据以下设计产物实现，不要引入产物之外的假设：
+· 状态机：docs/TDD.md#6.2（严格按转移表，非法转移抛 IllegalTransition）
+· 表结构：docs/db/schema.sql（不得修改字段名与类型）
+· 接口契约：docs/api/openapi.yaml（字段、状态码、错误码以它为准）
+· 错误码：docs/api/errors.md
+· 编码约定：docs/CONVENTIONS.md
+
+执行顺序：先领域层（纯逻辑、无框架依赖），再应用层，最后接口层。
+每一层完成后：
+1) 说明你依据了产物中的哪一段
+2) 列出你做出的、产物中未写明的假设（如有）
+3) 给出对应的单元测试
+如果发现产物之间存在矛盾，停下来报告矛盾，不要自行选择一个继续。</code></pre>
+    <p style="font-size:14px;color:var(--ink-soft)"><strong>第 3 条是精髓：让 AI 主动报告「我不得不做的假设」。</strong>那些假设，就是你的设计文档欠下的债——把它们逐条补回去，设计质量就提升了。</p>
+  </div>
+
+  <div class="card plain">
+    <p class="card-title"><span class="tag">卡片 5</span>契约与测试派生</p>
+    <pre><code>根据 docs/api/openapi.yaml：
+1) 生成前端 TypeScript 类型定义与 API 调用封装
+2) 生成 Mock 数据（覆盖正常、参数缺失、状态冲突、无权限四类）
+3) 生成后端契约测试：断言实际响应符合 OpenAPI 描述
+4) 生成错误码到用户提示文案的映射表（中文，面向普通用户）
+不要修改 openapi.yaml；如果你认为契约有问题，单列出来，不要直接改。</code></pre>
+  </div>
+
+  <h3>10.7 一个真实的协作范式</h3>
+  <div class="card plain">
+    <p class="card-title"><span class="tag">场景</span>3 人团队的真实工作流</p>
+    <ol>
+      <li><strong>周一上午</strong>：3 人一起用「卡片 1」把需求问清楚，产出「需求与约束」1 页纸。<em style="color:#a53c26">这一步绝对不能交给 AI 独自完成</em>——业务知识只在人脑子里。</li>
+      <li><strong>周一下午</strong>：A 用「卡片 2」帮状态机挑刺 → 3 人修状态机 → B 用 AI 生成 ER 图初稿 → 3 人核对并落 DDL。</li>
+      <li><strong>周二</strong>：C 用「卡片 3」跑一致性核对 → 发现 7 个不一致 → 3 人分头修。</li>
+      <li><strong>周三</strong>：TDD 整合 + 评审会（AI 记录纪要草稿，人来定结论）。</li>
+      <li><strong>周三之后</strong>：3 人各自用「卡片 4」从契约派生实现，AI 写代码，人做验收；契约是共同基线，不互相等。</li>
+    </ol>
+    <p><strong>关键观察</strong>：这套流程里，AI 承担了大量「穷举」与「生成」工作，人集中在「定义、裁决、承担」上。而这恰恰是 AI 时代价值重新分配的方向——<strong>人的时间从「敲代码」转移到「想清楚」</strong>。</p>
+  </div>
+
+  <div class="note warn">
+    <span class="h">必须说清楚的两条红线</span>
+    <p><strong>① 责任不能外包。</strong>代码是 AI 写的，出了线上事故，责任在你。所以「看懂并验证」是必修课——这恰恰要求你有设计能力，因为只有知道设计意图，才能判断实现对不对。</p>
+    <p><strong>② 不要把 AI 的输出当设计。</strong>AI 生成的架构图、状态机、ER 图、OpenAPI 都是「看起来很专业的初稿」。未经人审视的设计，比没有设计更危险——因为它会让人误以为已经思考过了。<strong>AI 能帮你把设计做得更快，但不能替你做设计。</strong></p>
+  </div>
+
+  <div class="ai">
+    <p class="h">让 AI 帮你建立「个人设计能力」的三个练习</p>
+    <ol>
+      <li><strong>反向练习</strong>：让 AI 生成一份设计，你逐条找它的错误并说明为什么错。<strong>做 10 次，你的判断力会有质变。</strong></li>
+      <li><strong>对抗练习</strong>：让 AI 扮演客户/测试/新同事/运维，轮流质疑你的设计，直到你答不上来。答不上来的地方就是你设计的空洞。</li>
+      <li><strong>约束练习</strong>：给定「1 人 / 2 周 / 零预算」，让 AI 给方案，然后你自己在 3 分钟内给出更合适的方案。反复练，直到你的约束直觉快过 AI 的建议。</li>
+    </ol>
+  </div>
+
+  <details>
+    <summary>动手任务 10-A：把一个模块「AI 化」（90 分钟）</summary>
+    <div class="d-body">
+      <ol>
+        <li>挑你项目里一个中等复杂度的模块（比如订单模块）。</li>
+        <li>为它准备完整的设计输入：状态转移表、字段定义、接口契约、错误码、业务规则。</li>
+        <li>用「卡片 4」的提示词让 AI 生成实现。</li>
+        <li><strong>逐条核对</strong>：它生成的实现与你设计输入一致吗？它做了哪些你没要求的假设？它漏掉了哪些守卫条件？</li>
+        <li>把「它做的假设」和「它漏的条件」列成清单——<strong>这份清单就是你设计文档的补充清单</strong>，补进去后再跑一次，这次它应该几乎不需要假设。</li>
+      </ol>
+      <p style="margin-top:12px"><strong>你会亲手体会到</strong>：AI 产出质量的提升曲线，和你设计输入的精度曲线，是同一条。</p>
+    </div>
+  </details>
+</section>
+
+<!-- ============ 第 11 章 ============ -->
+<section class="chapter" id="ch11">
+  <div class="chapter-head">
+    <span class="chapter-no">11</span>
+    <h2>常见错误速查表</h2>
+    <p class="sub">考前一周翻这一页就够了。</p>
+  </div>
+
+  <div class="tbl-scroll">
+  <table>
+    <thead><tr><th>#</th><th>错误</th><th>后果</th><th>正确做法</th><th>属于</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>跳过设计直接写代码</td><td>需求一变全线返工</td><td>至少先出功能模块 + 状态机</td><td>§1 §2</td></tr>
+      <tr><td>2</td><td>模块按技术层划分</td><td>无法体现业务</td><td>业务模块 + 架构分层两个维度</td><td>§1</td></tr>
+      <tr><td>3</td><td>不写「不承担什么」</td><td>边界被侵蚀，公共垃圾场</td><td>每个模块强制写排除项</td><td>§1</td></tr>
+      <tr><td>4</td><td>只画主流程</td><td>上线被异常打脸</td><td>≥10 条异常分支</td><td>§2</td></tr>
+      <tr><td>5</td><td>状态与流程步骤混淆</td><td>状态机爆炸</td><td>问：会持续存在吗？会显示在列表里吗？</td><td>§2</td></tr>
+      <tr><td>6</td><td>状态机漏「取消/超时/失败」</td><td>资源泄漏、用户无路可走</td><td>用 AI 穷举事件后人工筛</td><td>§2</td></tr>
+      <tr><td>7</td><td>非法转移没有兜底</td><td>静默错误 / 崩溃</td><td>显式抛错 + 定义错误码</td><td>§2</td></tr>
+      <tr><td>8</td><td>原型只画理想状态</td><td>空态、错误态无人处理</td><td>每页补 loading/empty/error</td><td>§3</td></tr>
+      <tr><td>9</td><td>按钮文案用「确定」「提交」</td><td>用户不知道会发生什么</td><td>动词 + 宾语</td><td>§3</td></tr>
+      <tr><td>10</td><td>状态页按钮与状态机不一致</td><td>用户点了没反应</td><td>按钮 = 状态机的出口事件</td><td>§3 §7</td></tr>
+      <tr><td>11</td><td>不写量化质量目标</td><td>架构无对错，只有偏好</td><td>并发/延迟/成本写具体数字</td><td>§4</td></tr>
+      <tr><td>12</td><td>小团队上微服务</td><td>交付直接崩</td><td>模块化单体 + 事件解耦</td><td>§4</td></tr>
+      <tr><td>13</td><td>技术选型只看「先进」</td><td>没人维护得了</td><td>按权重打分，团队熟悉度权重最高</td><td>§4</td></tr>
+      <tr><td>14</td><td>不写 ADR</td><td>半年后没人记得为何这么选</td><td>背景/选项/决定/后果（含负面）</td><td>§4</td></tr>
+      <tr><td>15</td><td>隐式多对多没拆表</td><td>无法挂关联属性</td><td>M:N 一律拆关联表</td><td>§5</td></tr>
+      <tr><td>16</td><td>金额用 float</td><td>精度丢失</td><td>DECIMAL 或整数分</td><td>§5</td></tr>
+      <tr><td>17</td><td>不标注快照字段</td><td>改价后历史订单金额全变</td><td>显式标 ★ 并写清快照时点</td><td>§5</td></tr>
+      <tr><td>18</td><td>靠代码防重复而无唯一约束</td><td>并发下必然重复数据</td><td>业务唯一性必须落库</td><td>§5</td></tr>
+      <tr><td>19</td><td>所有错误都返回 400</td><td>前端无法分支处理</td><td>409 表示状态冲突、422 表示语义错</td><td>§6</td></tr>
+      <tr><td>20</td><td>POST 无幂等设计</td><td>重复提交 = 重复订单</td><td>Idempotency-Key 或业务唯一号</td><td>§6</td></tr>
+      <tr><td>21</td><td>错误响应各模块各写一套</td><td>前端逻辑全乱</td><td>全局统一错误码表</td><td>§6 §7</td></tr>
+      <tr><td>22</td><td>不做一致性核对</td><td>联调期集体返工</td><td>跑 C1–C10，每项必须有结论</td><td>§7</td></tr>
+      <tr><td>23</td><td>评审不记行动项</td><td>下次评审同样问题再来一遍</td><td>每条问题有责任人和期限</td><td>§7</td></tr>
+      <tr><td>24</td><td>文档没有变更记录</td><td>不知道手里这份是不是最新的</td><td>版本号 + 变更表</td><td>§8</td></tr>
+      <tr><td>25</td><td>直接抄 AI 产出的设计</td><td>看起来专业，实际没思考过</td><td>AI 出初稿，人做裁决与背书</td><td>§10</td></tr>
+      <tr><td>26</td><td>给 AI 模糊输入</td><td>得到泛用演示代码</td><td>先写约束与契约，再让 AI 实现</td><td>§10</td></tr>
+      <tr><td>27</td><td>不看 AI 报告的假设</td><td>隐藏的债务被埋进去</td><td>把它做的假设逐条补进设计</td><td>§10</td></tr>
+      <tr><td>28</td><td>把 AI 当评审通过就算过</td><td>AI 会误报也会漏报</td><td>AI 扫，人核，责任在人</td><td>§7 §10</td></tr>
+    </tbody>
+  </table>
+  </div>
+</section>
+
+<!-- ============ 第 12 章 ============ -->
+<section class="chapter" id="ch12">
+  <div class="chapter-head">
+    <span class="chapter-no">12</span>
+    <h2>课后练习与参考答案</h2>
+    <p class="sub">九道大题 + 若干小题，建议用时 3 小时。</p>
+  </div>
+
+  <h3>12.1 题目</h3>
+  <div class="tbl-scroll">
+  <table>
+    <thead><tr><th style="width:44px">题号</th><th>题目</th><th style="width:80px">分值</th><th style="width:110px">对应章节</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>为「校园跑腿代取快递」系统划分功能模块（5–8 个），每个写一句话职责 + 核心功能点 + 不承担的事 + 优先级。</td><td>10</td><td>§1</td></tr>
+      <tr><td>2</td><td>画出「跑腿订单」的状态机（≥6 状态），并给出完整状态转移表（含守卫条件与附带动作）。</td><td>15</td><td>§2</td></tr>
+      <tr><td>3</td><td>列出跑腿订单流程中至少 10 条异常分支，每条写：触发条件 / 系统表现 / 用户提示。</td><td>10</td><td>§2</td></tr>
+      <tr><td>4</td><td>为该系统设计 8 个页面，标注每页的唯一任务与所需接口；并画出其中 2 个页面的线框（含错误态与空态）。</td><td>10</td><td>§3</td></tr>
+      <tr><td>5</td><td>给定约束「1 人、6 周、零预算、峰值 50 并发」，选择架构风格并给出 5 条技术选型决策，各写一句决定性理由 + 一条负面后果。</td><td>10</td><td>§4</td></tr>
+      <tr><td>6</td><td>为该系统做数据建模：列出 ≥6 张表的主键、外键、唯一约束，并标出 2 个快照字段及理由。写出一段 MySQL DDL。</td><td>15</td><td>§5</td></tr>
+      <tr><td>7</td><td>设计 6 个 API（路径、方法、请求/响应字段、状态码），写出统一错误响应结构与 ≥8 个错误码表，并说明哪些接口需要幂等键。</td><td>15</td><td>§6</td></tr>
+      <tr><td>8</td><td>针对你的设计做一次 C1–C10 一致性核对，列出所有发现的不一致点（至少 4 条）及修改动作。进一步：其中哪两条是 Blocker？为什么？</td><td>10</td><td>§7</td></tr>
+      <tr><td>9</td><td>（开放题）有人说「AI 时代不需要写设计文档了，直接让 AI 写代码更快」。请用本课内容反驳，列出至少 4 条理由，并给出一个「人 + AI」协作的最小流程。</td><td>15</td><td>§10</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3>12.2 参考答案要点</h3>
+
+  <details>
+    <summary>第 1 题 参考答案</summary>
+    <div class="d-body">
+      <p><strong>推荐划分</strong>：</p>
+      <div class="tbl-scroll">
+      <table>
+        <thead><tr><th>模块</th><th>一句话职责</th><th>核心功能</th><th>不承担</th><th>优先级</th></tr></thead>
+        <tbody>
+          <tr><td>账号与身份</td><td>负责用户注册、登录与身份凭证管理</td><td>注册、登录、登出、学生认证</td><td>不做校园卡充值</td><td>必须有</td></tr>
+          <tr><td>快递信息</td><td>负责寄件信息与取件码的登记与核验</td><td>录入快递单号、生成取件码、状态更新</td><td>不与快递公司系统对接</td><td>必须有</td></tr>
+          <tr><td>跑腿任务</td><td>负责跑腿任务从发布到完成的生命周期</td><td>发布、指派、接单、完成、取消</td><td>不做配送路线规划</td><td>必须有</td></tr>
+          <tr><td>接单池</td><td>负责将待接任务与跑腿员匹配</td><td>任务池、抢单、派单、指派策略</td><td>不做跑腿员培训</td><td>必须有</td></tr>
+          <tr><td>费用结算</td><td>负责费用计算与跑腿员报酬结算</td><td>计价规则、钱包、提现</td><td>不做实名认证</td><td>该有</td></tr>
+          <tr><td>消息通知</td><td>负责把系统事件送达用户</td><td>事件订阅、模板渲染、已读</td><td>不做推送通道自研</td><td>该有</td></tr>
+          <tr><td>后台运营</td><td>为管理员提供审核、投诉处理与数据看板</td><td>任务审计、投诉处理、用户管理</td><td>不做财务对账</td><td>该有</td></tr>
+        </tbody>
+      </table>
+      </div>
+      <p><strong>评分要点</strong>：职责句不含「和/等/相关」等模糊词（每出现一个扣 1 分）；有「不承担的事」（2 分）；有优先级（2 分）；模块粒度一致（2 分）。</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>第 2 题 参考答案</summary>
+    <div class="d-body">
+      <p><strong>推荐状态机</strong>：待接单(PUBLISHED) → 已接单(ACCEPTED) → 已取件(PICKED_UP) → 已送达(DELIVERED) → 已完成(COMPLETED)；异常态：已取消(CANCELLED)、争议中(DISPUTED)、已退款(REFUNDED)。</p>
+      <div class="tbl-scroll">
+      <table>
+        <thead><tr><th>当前状态</th><th>事件</th><th>守卫</th><th>目标状态</th><th>附带动作</th></tr></thead>
+        <tbody>
+          <tr><td>待接单</td><td>accept</td><td>任务未被他人接</td><td>已接单</td><td>锁定跑腿员、通知发布者</td></tr>
+          <tr><td>待接单</td><td>cancel</td><td>发布者主动取消</td><td>已取消</td><td>释放任务、退还押金</td></tr>
+          <tr><td>待接单</td><td>timeout</td><td>发布后 30 分钟无人接</td><td>已取消</td><td>退还押金、通知发布者</td></tr>
+          <tr><td>已接单</td><td>pickup</td><td>取件码核验通过</td><td>已取件</td><td>记录取件时间</td></tr>
+          <tr><td>已接单</td><td>cancel</td><td>跑腿员取消且发布者同意</td><td>已取消</td><td>任务重回待接单池</td></tr>
+          <tr><td>已接单</td><td>dispute</td><td>发布者投诉且有凭证</td><td>争议中</td><td>冻结结算、通知管理员</td></tr>
+          <tr><td>已取件</td><td>deliver</td><td>送达码核验通过</td><td>已送达</td><td>生成待确认通知</td></tr>
+          <tr><td>已取件</td><td>dispute</td><td>出现异常（超时/破损）</td><td>争议中</td><td>冻结结算</td></tr>
+          <tr><td>已送达</td><td>confirm</td><td>发布者确认收货</td><td>已完成</td><td>结算跑腿员报酬</td></tr>
+          <tr><td>已送达</td><td>dispute</td><td>送达后 24h 内投诉</td><td>争议中</td><td>冻结结算</td></tr>
+          <tr><td>争议中</td><td>resolve_refund</td><td>管理员判定发布者胜</td><td>已退款</td><td>退款、扣除跑腿员信用分</td></tr>
+          <tr><td>争议中</td><td>resolve_release</td><td>管理员判定跑腿员胜</td><td>已完成</td><td>正常结算</td></tr>
+      </tbody>
+      </table>
+      </div>
+      <p><strong>评分要点</strong>：状态数 ≥6（2 分）；有终态（2 分）；每条转移有守卫或明确无守卫（4 分）；有异常分支（争议/退款/超时）（4 分）；附带动作体现了业务规则（3 分）。</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>第 3、4 题 参考答案要点</summary>
+    <div class="d-body">
+      <p><strong>第 3 题</strong>：异常分支应覆盖 ① 用户发完就取消 ② 无人接单超时 ③ 两人同时抢单 ④ 接单后爽约 ⑤ 取件码输错 ⑥ 快递丢失/破损 ⑦ 送达后无人确认 ⑧ 费用争议 ⑨ 支付失败 ⑩ 跑腿员恶意取消 ⑪ 押金退还失败 ⑫ 通知发送失败。</p>
+      <p>每条需包含三要素，缺项扣分。<strong>加分项</strong>：区分「用户可自愈」和「需人工介入」两类。</p>
+      <p><strong>第 4 题</strong>：页面清单示例——首页/任务大厅、发布任务、任务详情、我的任务/我的发布、跑腿员接单页、订单状态页、钱包、后台投诉处理。线框须含错误态（网络失败、码输错）与空态（还没有任何任务）。<strong>加分项</strong>：标出某页面上每个按钮对应的状态机事件。</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>第 5、6 题 参考答案要点</summary>
+    <div class="d-body">
+      <p><strong>第 5 题</strong>：约束下唯一合理答案是<strong>单体应用（分层架构）</strong>，理由：1 人无法运维多服务；6 周没时间处理分布式问题；峰值 50 并发单体绰绰有余；零预算禁不起托管服务集群。</p>
+      <p>选型示例：前端原生/轻框架（熟悉度优先）· 后端 Python Flask/FastAPI 或 Node Express（选熟的）· 数据库 SQLite 或托管 MySQL 免费额度（视是否需要并发写）· 部署单机云服务器 · 监控用最便宜的日志服务。<strong>每条决策必须写出「负面后果」</strong>，如「选 SQLite → 并发写有上限，若活动日流量突增需迁移，这是已知风险」。</p>
+      <p><strong>第 6 题</strong>：核心表：`users`、`express_orders`（快递单）、`errand_tasks`（跑腿任务）、`task_events`（状态流水）、`payments`、`disputes`。</p>
+      <p>快照字段示例：`errand_tasks.pickup_code_snapshot`（下单时的取件码，若快递员后来改码需留痕）、`errand_tasks.fee_snapshot`（下单时算好的费用，后续调价不影响已下单任务）。</p>
+      <p>DDL 关键点：金额用 <code>DECIMAL(10,2)</code>；状态用 <code>ENUM</code> 或 VARCHAR + CHECK；任务号 <code>UNIQUE</code>；<code>idx_runner_status</code> 支撑接单池查询；每张表有 <code>created_at/updated_at</code>。</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>第 7、8 题 参考答案要点</summary>
+    <div class="d-body">
+      <p><strong>第 7 题</strong>：6 个接口示例——<code>POST /tasks</code>（发布）、<code>GET /tasks</code>（任务大厅）、<code>GET /tasks/{id}</code>、<code>POST /tasks/{id}/accept</code>（抢单）、<code>POST /tasks/{id}/pickup</code>、<code>POST /tasks/{id}/confirm</code>、<code>POST /disputes</code>。</p>
+      <p>需幂等键：发布任务、抢单、确认收货（防止重复提交产生重复订单/重复结算）。错误码示例：<code>TASK_NOT_FOUND</code>、<code>TASK_ALREADY_ACCEPTED</code>、<code>TASK_STATE_CONFLICT</code>、<code>CODE_MISMATCH</code>、<code>PAYMENT_FAILED</code>、<code>NOT_TASK_RUNNER</code>、<code>DISPUTE_NOT_ALLOWED</code>、<code>IDEMPOTENCY_KEY_REUSED</code>、<code>INVALID_STATE_TRANSITION</code>。</p>
+      <p><strong>第 8 题</strong>：评分只看<strong>是否认真做了核对并给出修改动作</strong>，不要求答案唯一。典型不一致：状态机有「争议中」但表里没有对应 ENUM 值；页面有「我要投诉」按钮但没有 disputes 表和接口；任务大厅要按「距离最近」排序但接口没有位置参数；架构图没画对象存储但代码要存取件码图片；错误码在两个模块各写一套。</p>
+      <p>Blocker 判定示例：「状态机有争议中但 DB ENUM 缺值」→ 定时任务扫描到该状态时写入即失败，整条线跑不通；「页面有按钮但无接口」→ 核心链路断掉。两者都属 Blocker，因为「不改就做不下去」。</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>第 9 题 参考答案（开放题）</summary>
+    <div class="d-body">
+      <p><strong>四条以上理由，任选即可得分：</strong></p>
+      <ol>
+        <li><strong>AI 的输出质量上限由输入精度决定。</strong>不说清状态、守卫、错误码、幂等，AI 只能给演示代码——这正是本课八章在训练的能力。</li>
+        <li><strong>业务知识只在人脑子里。</strong>「48 小时内可退款」「交接码校验」这些约束不是通用知识，AI 不知道，除非你写下来。而写下来就是设计。</li>
+        <li><strong>跨产物矛盾 AI 不会自动消除。</strong>模型看到状态机和 DDL 不一致时，会「选择一个继续」，而不是停下来问你——除非你要求它报告矛盾。</li>
+        <li><strong>验收需要判据。</strong>没有设计就没有「什么算对」，AI 写完你也不知道怎么验，只能靠看起来对。</li>
+        <li><strong>责任不可外包。</strong>事故责任在签字的人身上，而判断 AI 实现对错的能力来自设计能力。</li>
+      </ol>
+      <p><strong>最小协作流程（四步）</strong>：① 人定义问题与约束 → ② 人产出可验证规格（状态机/契约/错误码） → ③ AI 从规格派生实现并报告假设 → ④ 人核对假设与产出，补回设计。</p>
+    </div>
+  </details>
+
+  <h3>12.3 评分标准（总 110 分）</h3>
+  <div class="tbl-scroll">
+  <table>
+    <thead><tr><th>等级</th><th>分数</th><th>描述</th></tr></thead>
+    <tbody>
+      <tr><td>优秀</td><td>95–110</td><td>产物完整、一致性好、能主动发现矛盾并给出取舍理由</td></tr>
+      <tr><td>良好</td><td>80–94</td><td>主要环节到位，一致性核对做得实，个别地方深度不足</td></tr>
+      <tr><td>合格</td><td>60–79</td><td>八项产物基本都有，但存在明显不一致或模糊表述</td></tr>
+      <tr><td>不合格</td><td>&lt;60</td><td>缺少多个环节，或把设计写成需求复述</td></tr>
+    </tbody>
+  </table>
+  </div>
+</section>
+
+<!-- ============ 第 13 章 ============ -->
+<section class="chapter" id="ch13">
+  <div class="chapter-head">
+    <span class="chapter-no">13</span>
+    <h2>术语表与工具箱</h2>
+    <p class="sub">查词用的一页，以及可以立刻上手的工具。</p>
+  </div>
+
+  <h3>13.1 术语表</h3>
+  <div class="tbl-scroll">
+  <table>
+    <thead><tr><th style="width:170px">术语</th><th>一句话解释</th><th style="width:80px">章节</th></tr></thead>
+    <tbody>
+      <tr><td>功能模块</td><td>按业务职责划分的系统组成部分，有明确边界与对外能力</td><td>§1</td></tr>
+      <tr><td>边界</td><td>模块之间职责的分界线，含「明确不做什么」</td><td>§1</td></tr>
+      <tr><td>横切关注点</td><td>贯穿所有模块的非业务需求：日志、鉴权、限流、事务</td><td>§1 §4</td></tr>
+      <tr><td>业务流程 / 泳道图</td><td>按角色分泳道展示动作序列的图</td><td>§2</td></tr>
+      <tr><td>状态机</td><td>描述对象生命周期中状态与转移规则的模型</td><td>§2</td></tr>
+      <tr><td>守卫条件</td><td>转移发生必须满足的前提</td><td>§2</td></tr>
+      <tr><td>终态</td><td>进入后不再发生转移的状态</td><td>§2</td></tr>
+      <tr><td>信息架构</td><td>页面的组织结构与导航关系</td><td>§3</td></tr>
+      <tr><td>低保真 / 高保真原型</td><td>原型的精细程度：框图 vs 可点击视觉稿</td><td>§3</td></tr>
+      <tr><td>空态 / 错误态 / 加载态</td><td>页面在无数据、出错、加载中的三种非理想状态</td><td>§3</td></tr>
+      <tr><td>质量属性</td><td>系统的非功能特性：性能、可用性、一致性、可维护性等</td><td>§4</td></tr>
+      <tr><td>架构风格</td><td>系统的结构范式：单体、微服务、事件驱动等</td><td>§4</td></tr>
+      <tr><td>模块化单体</td><td>单一部署、内部按业务模块隔离的单体系统</td><td>§4</td></tr>
+      <tr><td>依赖倒置</td><td>让高层/领域层不依赖低层与框架的实现方式</td><td>§4</td></tr>
+      <tr><td>ADR</td><td>架构决策记录：背景 / 选项 / 决定 / 后果</td><td>§4</td></tr>
+      <tr><td>非功能需求</td><td>不描述功能、描述质量目标的需求</td><td>§4</td></tr>
+      <tr><td>概念模型</td><td>面向业务的实体与关系描述，不涉及数据库实现</td><td>§5</td></tr>
+      <tr><td>逻辑模型</td><td>关系模式、主外键、范式层面的数据设计</td><td>§5</td></tr>
+      <tr><td>物理模型</td><td>具体 DBMS 上的类型、索引、约束设计</td><td>§5</td></tr>
+      <tr><td>ER 图</td><td>实体关系图，描述实体、属性与基数关系</td><td>§5</td></tr>
+      <tr><td>范式</td><td>消除数据重复与更新不一致的规则体系</td><td>§5</td></tr>
+      <tr><td>快照字段</td><td>为记录「当时事实」而冗余存储的历史值</td><td>§5</td></tr>
+      <tr><td>最左前缀</td><td>联合索引可被利用的字段顺序规则</td><td>§5</td></tr>
+      <tr><td>数据契约</td><td>对数据形状与语义的正式、机器可读约定</td><td>§6</td></tr>
+      <tr><td>OpenAPI</td><td>描述 HTTP 接口的机器可读规范</td><td>§6</td></tr>
+      <tr><td>幂等</td><td>同一请求执行多次与执行一次效果相同</td><td>§6</td></tr>
+      <tr><td>幂等键</td><td>用于去重的客户端生成的唯一标识</td><td>§6</td></tr>
+      <tr><td>状态码语义</td><td>用 HTTP 状态码表达结果类别（200/400/401/403/404/409/422）</td><td>§6</td></tr>
+      <tr><td>契约测试</td><td>验证实际实现符合接口描述的自动化测试</td><td>§6</td></tr>
+      <tr><td>一致性核对</td><td>跨设计产物的交叉比对</td><td>§7</td></tr>
+      <tr><td>设计评审</td><td>以固定流程和检查表对设计做集体审查并形成结论</td><td>§7</td></tr>
+      <tr><td>Blocker / Major / Minor</td><td>评审缺陷的严重度分级</td><td>§7</td></tr>
+      <tr><td>TDD</td><td>技术设计文档，整合全部设计产物的单一文件</td><td>§8</td></tr>
+      <tr><td>DoD</td><td>Definition of Done，交付完成的判定标准</td><td>§8</td></tr>
+      <tr><td>可追溯性</td><td>设计决策能回溯到原始需求与约束</td><td>§8</td></tr>
+      <tr><td>上下文工程</td><td>把对任务的正确信息放进 AI 上下文的能力</td><td>§10</td></tr>
+      <tr><td>隐式假设</td><td>实现过程中被迫补上但设计未写明的规则</td><td>§10</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3>13.2 工具箱</h3>
+  <div class="grid2">
+    <div class="mini"><h5>流程与状态机</h5>
+      <ul>
+        <li><strong>Mermaid</strong> — <code>stateDiagram-v2</code> 画状态机、<code>flowchart</code> 画流程、<code>erDiagram</code> 画 ER 图，直接嵌 Markdown</li>
+        <li><strong>draw.io / diagrams.net</strong> — 自由绘制，导出 SVG/PNG</li>
+        <li><strong>PlantUML</strong> — 文本描述生成图，适合放进 CI</li>
+        <li><strong>Excalidraw</strong> — 手绘风格原型与草图</li>
+      </ul>
+    </div>
+    <div class="mini"><h5>原型与界面</h5>
+      <ul>
+        <li><strong>Figma / Penpot</strong> — 界面与原型设计</li>
+        <li><strong>Axure</strong> — 复杂交互原型（教育场景常见）</li>
+        <li><strong>纯 HTML/CSS</strong> — 低保真最快的方式，浏览器直接看</li>
+        <li><strong>Storybook</strong> — 组件文档化，适合前端项目</li>
+      </ul>
+    </div>
+    <div class="mini"><h5>建模与契约</h5>
+      <ul>
+        <li><strong>dbdiagram.io / ERDPlus</strong> — 在线画 ER 图</li>
+        <li><strong>MySQL Workbench / DBeaver</strong> — 从模型生成 DDL</li>
+        <li><strong>OpenAPI Generator</strong> — 由契约生成客户端 SDK、Mock、文档</li>
+        <li><strong>Spectral / Redocly</strong> — OpenAPI 规范校验与文档渲染</li>
+      </ul>
+    </div>
+    <div class="mini"><h5>文档与协作</h5>
+      <ul>
+        <li><strong>Markdown + Git</strong> — 文档与代码同仓，版本天然可控</li>
+        <li><strong>Notion / 语雀 / docsify</strong> — 团队文档站</li>
+        <li><strong>ADR 模板</strong> — <code>adr-tools</code> 或自建 <code>docs/adr/</code> 目录</li>
+        <li><strong>GitHub Projects / Jira</strong> — 跟踪评审行动项</li>
+      </ul>
+    </div>
+    <div class="mini"><h5>AI 协作</h5>
+      <ul>
+        <li><strong>AI 对话</strong> — 做对抗式追问、生成候选、挑刺</li>
+        <li><strong>Cursor / Copilot / Cline</strong> — 面向代码库的 AI 助手</li>
+        <li><strong>Claude Code / Zhanlu Code</strong> — 终端内的编码代理，适合按规格批量实现</li>
+        <li><strong>脚本 + LLM 组合</strong> — 先用脚本做确定性比对（字段差集），再让 AI 处理语义问题</li>
+      </ul>
+    </div>
+    <div class="mini"><h5>验证</h5>
+      <ul>
+        <li><strong>pytest / JUnit</strong> — 状态机转移表驱动的单元测试</li>
+        <li><strong>Schemathesis</strong> — 自动按 OpenAPI 跑模糊测试</li>
+        <li><strong>Pact</strong> — 消费者驱动契约测试</li>
+        <li><strong>EXPLAIN</strong> — 验证索引是否生效</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3>13.3 一份最小起步清单</h3>
+  <p>如果你时间紧、只想先做起来，按这个顺序，每项控制在半天以内：</p>
+  <ol class="steps">
+    <li><div class="st-t">写出约束（30 分钟）</div><div class="st-d">团队几人、多久、多少钱、多少人用、什么端。写在 <code>docs/CONSTRAINTS.md</code>。</div></li>
+    <li><div class="st-t">列功能模块（1 小时）</div><div class="st-d">8 个以内，每个一句话职责 + 不承担的事。写进 <code>docs/MODULES.md</code>。</div></li>
+    <li><div class="st-t">画核心对象状态机（2 小时）</div><div class="st-d">只画最重要的那一个对象（通常是订单）。必须写转移表。<code>docs/STATE.md</code></div></li>
+    <li><div class="st-t">定 6 个接口（2 小时）</div><div class="st-d">路径、方法、字段、状态码、统一错误结构。<code>docs/api/openapi.yaml</code></div></li>
+    <li><div class="st-t">写 DDL（2 小时）</div><div class="st-d">5–8 张表，含主键、外键、唯一约束、索引。<code>docs/db/schema.sql</code></div></li>
+    <li><div class="st-t">跑一次核对（1 小时）</div><div class="st-d">按 C1–C10 过一遍，必出结论。<code>docs/CONSISTENCY.md</code></div></li>
+    <li><div class="st-t">用 AI 实现一个模块（半天）</div><div class="st-d">用卡片 4 的提示词从契约派生实现，然后<strong>逐条核对它做的假设</strong>，补进设计。</div></li>
+  </ol>
+
+  <div class="card plain" style="border-left:4px solid var(--gold); background:var(--gold-soft)">
+    <p class="card-title"><span class="tag">结语</span></p>
+    <p>这门课真正想教你的不是八个模板，而是一种<strong>把模糊变精确</strong>的习惯。</p>
+    <p>需求是模糊的，设计是把模糊收敛的过程；而今天，AI 会以极高的速度忠实地实现你给出的任何东西——<strong>无论它是清晰的还是含糊的</strong>。所以，把事情想清楚这件事，从来没有像今天这样值钱。</p>
+    <p style="font-family:var(--f-head); font-size:17px; color:#6b5316; margin-bottom:0">先想清楚，再动手；先定义，再生成。</p>
+  </div>
+</section>
+
+</main>
+</div>
+
+<footer class="page-foot">
+  <div>技术设计方法论教案 · 面向计算机专业本科生 · 案例：校园二手书流转平台「书接力」</div>
+  <a class="deerflow" href="https://deerflow.tech" target="_blank" rel="noopener">✦ Created By Deerflow</a>
+</footer>
+
+<button id="totop" title="回到顶部">↑</button>
+
+<script>
+(function(){
+  var bar = document.getElementById('progress');
+  var top = document.getElementById('totop');
+  function onScroll(){
+    var h = document.documentElement.scrollHeight - window.innerHeight;
+    var p = h > 0 ? (window.scrollY / h) * 100 : 0;
+    bar.style.width = p + '%';
+    if(window.scrollY > 600) top.classList.add('show'); else top.classList.remove('show');
+  }
+  window.addEventListener('scroll', onScroll, {passive:true});
+  onScroll();
+  top.addEventListener('click', function(){ window.scrollTo({top:0, behavior:'smooth'}); });
+
+  var io = new IntersectionObserver(function(entries){
+    entries.forEach(function(e){
+      if(e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target); }
+    });
+  }, {rootMargin:'0px 0px -8% 0px', threshold:0.04});
+  var groups = document.querySelectorAll('section.chapter');
+  groups.forEach(function(sec, i){
+    sec.classList.add('reveal');
+    sec.style.transitionDelay = (Math.min(i,3) * 40) + 'ms';
+    io.observe(sec);
+  });
+
+  var links = Array.prototype.slice.call(document.querySelectorAll('nav.toc a'));
+  var map = {};
+  links.forEach(function(a){ map[a.getAttribute('href').slice(1)] = a; });
+  var spy = new IntersectionObserver(function(entries){
+    entries.forEach(function(e){
+      if(e.isIntersecting){
+        links.forEach(function(a){ a.classList.remove('active'); });
+        var a = map[e.target.id];
+        if(a) a.classList.add('active');
+      }
+    });
+  }, {rootMargin:'-15% 0px -70% 0px'});
+  Object.keys(map).forEach(function(id){
+    var el = document.getElementById(id);
+    if(el) spy.observe(el);
+  });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="section-head"><div><a href="/" class="small">← 返回教材列表</a><h1 style="margin-top:8px">{{ book.title }}</h1></div>
+  <span class="tag {{ 'warn' if book.status != 'ON_SALE' else '' }}">{{ book.status_label }}</span></div>
+
+<div class="grid two">
+  <div class="card">
+    <div class="detail-cover">{% if book.cover_url %}<img src="{{ book.cover_url }}" alt="{{ book.title }}封面">{% else %}书{% endif %}</div>
+  </div>
+  <div class="card">
+    <div class="row"><span class="price"><small>¥</small>{{ book.price_text }}</span><span class="tag">{{ book.category_name }}</span></div>
+    <dl class="kv">
+      <dt>作者</dt><dd>{{ book.author or '未填写' }}</dd>
+      <dt>版次</dt><dd>{{ book.edition or '未填写' }}</dd>
+      <dt>ISBN</dt><dd>{{ book.isbn or '未填写' }}</dd>
+      <dt>成色</dt><dd>{{ book.condition_text }}</dd>
+    </dl>
+    <div class="seller-card">
+      <span class="avatar">{{ book.seller_nickname[0] }}</span>
+      <div><strong>{{ book.seller_nickname }}</strong><div class="small muted">信誉 ★ {{ '%.1f'|format(book.seller_reputation) }} · 完成交易 {{ book.seller_deals }} 次</div></div>
+    </div>
+    <p>{{ book.description or '卖家还没有填写详细描述，可在下单时备注想了解的问题。' }}</p>
+    <div class="row" style="margin-top:20px">
+      {% if user and user.id != book.seller_id and book.status == 'ON_SALE' %}
+        <a class="btn" href="/checkout/{{ book.id }}">立即下单</a>
+      {% elif not user %}
+        <a class="btn" href="/login?next=/books/{{ book.id }}">登录后下单</a>
+      {% endif %}
+      {% if user and (user.id == book.seller_id or user.role == 'admin') %}
+        <a class="btn secondary" href="/books/{{ book.id }}/edit">编辑教材</a>
+        {% if book.status == 'ON_SALE' %}<button class="btn secondary" data-book-action="off_shelf">下架</button>{% endif %}
+        {% if book.status == 'OFF_SHELF' %}<button class="btn secondary" data-book-action="list">重新上架</button>{% endif %}
+        {% if book.status == 'SOLD' %}<button class="btn secondary" data-book-action="relist">再次出售</button>{% endif %}
+        {% if book.status == 'PENDING_REVIEW' and user.role == 'admin' %}
+          <button class="btn" data-book-action="approve">审核通过</button>
+          <button class="btn secondary" data-book-action="reject">驳回</button>
+        {% endif %}
+        {% if book.status != 'BANNED' %}<button class="btn secondary" data-book-action="ban">封禁</button>{% else %}<button class="btn secondary" data-book-action="unban">解除封禁</button>{% endif %}
+      {% endif %}
+      {% if user %}<button class="btn ghost" id="report-book">举报</button>{% endif %}
+    </div>
+    {% if book.reject_reason %}<div class="notice bad">审核说明：{{ book.reject_reason }}</div>{% endif %}
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+$$('[data-book-action]').forEach(btn => btn.addEventListener('click', async () => {
+  const event = btn.dataset.bookAction;
+  let reason = '';
+  if (['reject','ban'].includes(event)) {
+    const v = await fieldModal(event === 'reject' ? '驳回上架申请' : '封禁书籍',
+      [{name:'reason', label:'原因说明', type:'textarea', required:true}], '确认');
+    if (!v) return; reason = v.reason;
+  }
+  try { await api('/api/v1/books/{{ book.id }}/actions/' + event, {method:'POST', body:{reason}});
+    toast('操作成功', 'ok'); setTimeout(() => location.reload(), 400); }
+  catch (err) { toast(err.message, 'err'); }
+}));
+$('#report-book')?.addEventListener('click', async () => {
+  const v = await fieldModal('举报这本书', [
+    {name:'reason', label:'举报原因（必填）', required:true, placeholder:'例如：虚假信息、盗版、重复发布'},
+    {name:'detail', label:'补充说明', type:'textarea'}
+  ], '提交举报');
+  if (!v) return;
+  try { await api('/api/v1/reports', {method:'POST', body:{target_type:'BOOK', target_id:{{ book.id }}, ...v}});
+    toast('举报已提交，管理员会尽快处理', 'ok'); }
+  catch (err) { toast(err.message, 'err'); }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+{% set flow = ['CREATED','PAID','SHIPPED','COMPLETED'] %}
+{% set progress = {'CREATED':1,'PAID':2,'SHIPPED':3,'COMPLETED':4,'CLOSED':4}.get(order.status, 0) %}
+{% block content %}
+<div class="section-head"><div><a href="/orders" class="small">← 返回订单列表</a><h1 style="margin-top:8px">订单详情</h1></div>
+  <span class="tag {{ 'warn' if order.status in ['CREATED','REFUNDING'] else ('bad' if order.status in ['CANCELLED','REFUNDED'] else '') }}">{{ order.status_label }}</span></div>
+
+<div class="card">
+  <div class="status-hero"><strong>订单号 {{ order.order_no }}</strong><span class="small faint">创建于 {{ order.created_at }}</span>
+    {% if order.seconds_left %}<span class="tag warn" id="pay-countdown">剩余 {{ (order.seconds_left // 60)|int }} 分 {{ order.seconds_left % 60 }} 秒</span>{% endif %}</div>
+  <div class="stepper">
+    {% for s in flow %}<div class="step {{ 'done' if loop.index <= progress else '' }} {{ 'current' if loop.index == progress + 1 else '' }}">{{ ORDER_LABELS[s] }}</div>{% endfor %}
+  </div>
+  {% if order.status in ['CANCELLED','REFUNDED','REFUNDING','CLOSED'] %}
+    <div class="notice {{ 'bad' if order.status in ['CANCELLED','REFUNDED'] else 'warn' }}">当前状态：{{ order.status_label }}{% if order.refund %} · 退款：{{ order.refund.reason }}{% endif %}</div>
+  {% endif %}
+  <div class="order-line">
+    <div class="thumb">{% if order.book_cover_url %}<img src="{{ order.book_cover_url }}" alt="">{% else %}书{% endif %}</div>
+    <div><strong>{{ order.book_title_snapshot }}</strong>
+      <div class="small muted">成色快照：{{ order.condition_snapshot }} · 成交价快照 ¥{{ '%.2f'|format(order.unit_price_snapshot / 100) }}</div></div>
+    <div class="spacer"></div><span class="price"><small>¥</small>{{ order.amount_text }}</span>
+  </div>
+  <dl class="kv">
+    <dt>{{ '卖家' if user.id == order.buyer_id else '买家' }}</dt>
+    <dd>{{ order.seller_nickname if user.id == order.buyer_id else order.buyer_nickname }}</dd>
+    <dt>交接点</dt><dd>{{ order.handover_point_label or HANDOVER_LABELS.get(order.handover_method, '待确认') }}</dd>
+    {% if order.payment %}<dt>支付流水</dt><dd>{{ order.payment.provider_txn_id }} · {{ HANDOVER_LABELS.get(order.payment.channel, order.payment.channel) }}</dd>{% endif %}
+    {% if order.remark %}<dt>买家备注</dt><dd>{{ order.remark }}</dd>{% endif %}
+  </dl>
+</div>
+
+{% if order.status == 'SHIPPED' %}
+<div class="card">
+  <h3>线下交接码</h3>
+  {% if user.id == order.seller_id or user.role == 'admin' %}
+    <div class="code-box">{{ order.handover_code }}</div>
+    <p class="hint center">向买家展示此码，核对无误后再交付教材。</p>
+  {% else %}
+    <p class="muted">向卖家索取 4 位交接码，当面核对后再确认收货。</p>
+  {% endif %}
+</div>
+{% endif %}
+
+{% if order.actions %}
+<div class="card">
+  <h3>下一步操作</h3>
+  <div class="row">
+    {% for a in order.actions %}<button class="btn {{ 'secondary' if a.event in ['cancel','apply_refund','reject'] }} {{ 'danger' if a.event == 'cancel' }}" data-event="{{ a.event }}">{{ a.label }}</button>{% endfor %}
+  </div>
+  {% if order.status in ['PAID','SHIPPED'] %}<p class="hint" style="margin-top:12px">支付/交接后 48 小时内可申请退款；交接后申请需填写纠纷说明。</p>{% endif %}
+</div>
+{% endif %}
+
+{% if order.can_review %}<div class="card"><h3>交易评价</h3><p class="muted">交易已完成，给对方打个分吧。</p><a class="btn" href="/reviews/{{ order.id }}">去评价</a></div>{% endif %}
+
+<div class="grid two">
+  <div class="card"><h3>状态流水</h3><ul class="timeline">
+    {% for e in order.events %}<li><strong>{{ e.to_status }}</strong> · {{ e.event }}
+      <div class="small muted">{{ e.note or '—' }} · {{ e.created_at }}</div></li>{% endfor %}
+  </ul></div>
+  <div class="card"><h3>评价记录</h3>
+    {% if order.reviews %}{% for r in order.reviews %}<div class="order-line"><div><strong>{{ '%.0f'|format(r.rating) }} 星</strong>
+      <div class="small muted">{{ r.content }}</div></div></div>{% endfor %}
+    {% else %}<div class="empty small">双方尚未评价</div>{% endif %}
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+const id = {{ order.id }};
+const actions = {
+  pay: () => go('/pay/' + id),
+  cancel: async () => {
+    const v = await fieldModal('取消订单', [{name:'note', label:'取消原因（选填）', type:'textarea'}], '确认取消');
+    if (!v) return;
+    await api(`/api/v1/orders/${id}/cancel`, {method:'POST', body:{note:v.note}}); return '订单已取消，书籍已重新上架';
+  },
+  ship: async () => {
+    const v = await fieldModal('确认交接方式', [{name:'handover_point', label:'交接点', type:'select',
+      options:[{value:'LIBRARY_WEST',label:'图书馆西门'},{value:'DORM_LOBBY',label:'宿舍楼下'},{value:'COURIER',label:'校园快递点'}]}], '生成交接码');
+    if (!v) return;
+    const data = await api(`/api/v1/orders/${id}/ship`, {method:'POST', body:v});
+    return '交接码已生成：' + data.handover_code;
+  },
+  apply_refund: async () => {
+    const v = await fieldModal('申请退款', [
+      {name:'reason', label:'退款原因（必填）', required:true},
+      {name:'evidence', label:'纠纷说明（交接后必填）', type:'textarea'}
+    ], '提交申请');
+    if (!v) return;
+    await api(`/api/v1/orders/${id}/refund`, {method:'POST', idempotencyKey:uuid(), body:v}); return '退款申请已提交';
+  },
+  confirm: async () => {
+    const v = await fieldModal('确认收货', [{name:'code', label:'4 位交接码', required:true, maxlength:4}], '确认收货');
+    if (!v) return;
+    await api(`/api/v1/orders/${id}/confirm`, {method:'POST', idempotencyKey:uuid(), body:v}); return '交易完成，可以去评价了';
+  },
+  approve: async () => {
+    const v = await fieldModal('同意退款', [{name:'note', label:'处理说明（选填）', type:'textarea'}], '同意退款');
+    if (!v) return;
+    await api('/api/v1/admin/refunds/' + {{ order.refund.id if order.refund else 0 }}, {method:'POST', body:{approve:true, note:v.note}}); return '退款已同意';
+  },
+  reject: async () => {
+    const v = await fieldModal('驳回退款', [{name:'note', label:'驳回理由', type:'textarea', required:true}], '驳回');
+    if (!v) return;
+    await api('/api/v1/admin/refunds/' + {{ order.refund.id if order.refund else 0 }}, {method:'POST', body:{approve:false, note:v.note}}); return '退款已驳回';
+  }
+};
+$$('[data-event]').forEach(btn => btn.addEventListener('click', async () => {
+  busy(btn, true);
+  try { const msg = await actions[btn.dataset.event](); if (msg) toast(msg, 'ok'); setTimeout(() => location.reload(), 500); }
+  catch (err) { toast(err.message, 'err'); busy(btn, false); }
+}));
+const cd = $('#pay-countdown');
+if (cd) setInterval(() => {
+  const m = cd.textContent.match(/剩余 (\d+) 分 (\d+) 秒/); if (!m) return;
+  let s = Number(m[1]) * 60 + Number(m[2]) - 1;
+  if (s <= 0) { cd.textContent = '已超时'; return; }
+  cd.textContent = `剩余 ${Math.floor(s/60)} 分 ${s%60} 秒`;
+}, 1000);
+</script>
+{% endblock %}

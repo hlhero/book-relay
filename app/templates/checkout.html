@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="section-head"><div><a href="/books/{{ book.id }}" class="small">← 返回书籍详情</a><h1 style="margin-top:8px">确认订单</h1></div></div>
+<div class="grid two">
+  <div class="card">
+    <h3>教材信息</h3>
+    <div class="order-line">
+      <div class="thumb">{% if book.cover_url %}<img src="{{ book.cover_url }}" alt="">{% else %}书{% endif %}</div>
+      <div><strong>{{ book.title }}</strong><div class="small muted">{{ book.condition_text }} · {{ book.author }}</div></div>
+      <div class="spacer"></div><span class="price"><small>¥</small>{{ book.price_text }}</span>
+    </div>
+    <div class="notice">下单后书籍将锁定 30 分钟；超时未支付订单自动取消，书籍重新上架。</div>
+  </div>
+  <div class="card">
+    <h3>交接与备注</h3>
+    <form id="checkout-form">
+      <label class="field"><span>选择交接点 *</span>
+        <select name="handover_method">
+          <option value="LIBRARY_WEST">图书馆西门</option>
+          <option value="DORM_LOBBY">宿舍楼下</option>
+          <option value="COURIER">校园快递点</option>
+        </select></label>
+      <label class="field"><span>给卖家的备注</span><textarea name="remark" placeholder="例如：今晚八点在图书馆西门交接可以吗？"></textarea></label>
+      <div class="row"><span class="price"><small>应付 ¥</small>{{ book.price_text }}</span><div class="spacer"></div>
+        <button class="btn" type="submit">提交订单</button></div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+// 幂等键在首次进入页面时生成，重复点击同一表单不会重复建单
+if (!sessionStorage.getItem('idem:checkout:{{ book.id }}') || performance.getEntriesByType('navigation')[0]?.type === 'navigate') {
+  sessionStorage.setItem('idem:checkout:{{ book.id }}', uuid());
+}
+$('#checkout-form').addEventListener('submit', async e => {
+  e.preventDefault(); const btn = $('button[type=submit]', e.target); busy(btn, true);
+  const f = new FormData(e.target);
+  try {
+    const order = await api('/api/v1/orders', {method:'POST', idempotencyKey:sessionStorage.getItem('idem:checkout:{{ book.id }}'),
+      body:{book_id:{{ book.id }}, handover_method:f.get('handover_method'), remark:f.get('remark')||''}});
+    sessionStorage.removeItem('idem:checkout:{{ book.id }}');
+    toast('订单已创建，请在 30 分钟内支付', 'ok'); go('/pay/' + order.id);
+  } catch (err) { toast(err.message, 'err'); busy(btn, false); }
+});
+</script>
+{% endblock %}

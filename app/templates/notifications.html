@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="section-head"><div><h1>消息中心</h1><p class="muted">需要你响应的通知都在这里，点开会自动标记已读。</p></div>
+  {% if items %}<button class="btn secondary" id="read-all">全部标为已读</button>{% endif %}</div>
+<div class="card">
+  <div class="loading" id="loading"><div class="spinner"></div>正在加载消息…</div>
+  {% if items %}
+    {% for n in items %}
+    <div class="order-line" style="{{ 'opacity:.65' if n.is_read else '' }}">
+      <div class="tag {{ 'warn' if n.type in ['REFUND','HANDOVER'] else '' }}">{{ n.type_label }}</div>
+      <div style="flex:1"><strong>{{ n.title }}</strong><div class="small muted">{{ n.content }}</div>
+        <div class="small faint">{{ n.created_at }}</div></div>
+      {% if not n.is_read %}<button class="btn sm secondary" data-read-notice="{{ n.id }}">标为已读</button>{% endif %}
+      {% if n.link %}<a class="btn sm ghost" href="{{ n.link }}">查看</a>{% endif %}
+    </div>
+    {% endfor %}
+  {% else %}
+    <div class="empty"><div class="icon">🔔</div><h3>暂时没有新消息</h3><p>订单状态变化、审核结果和退款处理都会通知你。</p><a class="btn" href="/">去看看教材</a></div>
+  {% endif %}
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+$('#read-all')?.addEventListener('click', async () => {
+  try { await api('/api/v1/notifications/read-all', {method:'POST'}); toast('已全部标记已读', 'ok'); setTimeout(() => location.reload(), 400); }
+  catch (err) { toast(err.message, 'err'); }
+});
+</script>
+{% endblock %}
