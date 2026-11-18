@@ -20,8 +20,19 @@ EOF
 }
 
 if probe; then
-  echo "[bookrelay] already running on port ${PORT}"
-  exit 0
+  if [ "${BOOKRELAY_RESTART:-0}" != "1" ]; then
+    echo "[bookrelay] already running on port ${PORT} (set BOOKRELAY_RESTART=1 to restart)"
+    exit 0
+  fi
+  pid="$(ss -lntp 2>/dev/null | grep -E ":${PORT}[[:space:]]" | sed -n 's/.*pid=\([0-9][0-9]*\).*/\1/p' | head -1)"
+  if [ -n "${pid}" ]; then
+    echo "[bookrelay] restarting (pid ${pid})"
+    kill "${pid}" || true
+    for _ in $(seq 1 10); do
+      probe || break
+      sleep 1
+    done
+  fi
 fi
 
 if [ ! -x "${VENV}/bin/python" ]; then
@@ -36,6 +47,16 @@ if ! "$PY" -c "import fastapi, uvicorn" >/dev/null 2>&1; then
 fi
 
 export BOOKRELAY_ENV="${BOOKRELAY_ENV:-development}"
+
+# Codespaces 的端口转发会在代理层改写 Host / 终止 TLS，导致 Origin 与 Host、scheme
+# 对不上而被 CSRF 校验拒绝。这里把当前转发域名显式加入可信来源。
+if [ -n "${CODESPACE_NAME:-}" ] && [ -n "${GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN:-}" ]; then
+  origin_main="https://${CODESPACE_NAME}-${PORT}.${GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN}"
+  origin_preview="https://${CODESPACE_NAME}-${PORT}.preview.${GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN}"
+  export BOOKRELAY_TRUSTED_ORIGINS="${BOOKRELAY_TRUSTED_ORIGINS:-},${origin_main},${origin_preview}"
+  echo "[bookrelay] trusted origin: ${origin_main}"
+fi
+
 echo "[bookrelay] starting uvicorn on 0.0.0.0:${PORT} (env=${BOOKRELAY_ENV})"
 nohup "$PY" -m uvicorn app.main:app --host 0.0.0.0 --port "${PORT}" --proxy-headers >"${LOG}" 2>&1 &
 

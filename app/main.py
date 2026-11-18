@@ -97,10 +97,15 @@ def _same_origin(request: Request) -> bool:
             return False
         # 只信任 Host；反向代理必须 proxy_set_header Host $host，特殊域名用
         # BOOKRELAY_TRUSTED_ORIGINS 显式放行，避免伪造 X-Forwarded-Host 绕过。
-        host = (request.headers.get("host") or "").split(":")[0]
+        host = (request.headers.get("host") or "").split(":")[0].strip().lower()
+        if not (origin_host and host and origin_host.lower() == host):
+            return False
         proto = (request.headers.get("x-forwarded-proto") or request.url.scheme).split(",")[0].strip().lower()
-        return bool(origin_host and host and origin_host.lower() == host.lower()
-                    and parsed_origin.scheme.lower() == proto)
+        if parsed_origin.scheme.lower() == proto:
+            return True
+        # 反向代理终止 TLS 时上游看到的是 http，浏览器 Origin 是 https；域名已一致，
+        # 且存在 X-Forwarded-Proto 说明确实经过代理，放行避免同源请求被误杀。
+        return bool(request.headers.get("x-forwarded-proto"))
     fetch_site = request.headers.get("sec-fetch-site")
     return not fetch_site or fetch_site in ("same-origin", "none")
 
